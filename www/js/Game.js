@@ -1,121 +1,116 @@
-// keep track of the translucent tiles drawn on top of the actual grid
-// to represent movement range (keeping track in this way makes
-// it easier to delete them later)
+
 var path = [];
 var drawn = [];
 
 // keep track of all of the tiles on the map
 var grid = [];
-var map = [[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-           [1,1,1,1,1,1,1,1,2,2,2,1,1,1,1,1,1,1,1,1],
-           [1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1],
-           [1,1,2,2,2,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1],
-           [1,1,2,2,2,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1],
-           [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-           [1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-           [1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-           [1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-           [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-           [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-           [1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1],
-           [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-           [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-           [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],];
+var map = [
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 2, 2, 2, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 2, 2, 2, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+];
 
 // list of units to create at the start of the game
-var units = [{moves: 5, range: 1, color: 0x00FF00, row: 1, col: 12, maxHealth: 10, team: 'player'},
-             {moves: 4, range: 2, color: 0xFF00FF, row: 6, col: 9, maxHealth: 8, team: 'player'},
-             {moves: 2, range: 1, color: 0xFF0000, row: 2, col: 2, maxHealth: 10, team: 'enemy'}];
+//frames : 1: sword, 2:bow, 3:wizard
+var units = [{
+        frame: 1,
+        moves: 5,
+        range: 1,
+        row: 1,
+        col: 12,
+        maxHealth: 10,
+        team: 'player'
+    },
+    {
+        frame: 2,
+        moves: 4,
+        range: 2,
+        row: 6,
+        col: 9,
+        maxHealth: 8,
+        team: 'player'
+    },
+    {
+        frame: 3,
+        moves: 2,
+        range: 1,
+        row: 2,
+        col: 2,
+        maxHealth: 10,
+        team: 'enemy'
+    }
+];
 
-// keep track of all of the units
+// contains all units
 var playerUnits = [];
 var enemyUnits = [];
 
-// either 'player' or 'enemy', keeps track of which turn it is
-// (this lets us reuse some fucntions for both turns)
+// contains the current player
 var turn = 'player';
 
-Strategy.Game = function(){};
+Strategy.Game = function () {};
 
-/* Class for defining a unit (player or enemy). Extends the Phaser Sprite
- * prototype. Unit is constructed by passing in unitData object.
- *
- * Unit data should include:
- * moves: integer movement range
- * range: integer attack range
- * color: hex color for square (temp)
- * row: integer starting row on the map (0-indexed)
- * col: integer starting col on the map (0-indexed)
- * maxHealth: integer maximum health (assumed that units start at max health)
- * team: string, either 'player' or 'enemy' to assign unit ownership
- * 
- * Future Idea: It would easy to convert units from one team to another
- * 
- */
 Unit = function (unitData) {
-    // initialize this as a phaser sprite
-    Phaser.Sprite.call(this, Strategy.game, 16 * unitData.col, 16 * unitData.row, 'tiles');
 
-    // set graphics properties
-    this.frame = 1;
-    this.anchor.setTo(-0.5,-0.5);
-    this.scale.setTo(0.5);
-    this.color = unitData.color;
-    this.tint = unitData.color;
+        Phaser.Sprite.call(this, Strategy.game, 16 * unitData.col, 16 * unitData.row, 'units');
 
-    // copy parameters to instance variables
-    this.row = unitData.row;
-    this.col = unitData.col;
-    this.moves = unitData.moves;
-    this.range = unitData.range;
-    this.team = unitData.team;
-    this.health = unitData.maxHealth;
-    this.maxHealth = unitData.maxHealth;
+        
+        this.frame = unitData.frame;
+        this.row = unitData.row;
+        this.col = unitData.col;
+        this.moves = unitData.moves;
+        this.range = unitData.range;
+        this.team = unitData.team;
+        this.health = unitData.maxHealth;
+        this.maxHealth = unitData.maxHealth;
 
-    // mark the starting tile as containing a player or enemy
-    // based on the team of the unit
-    if (this.team == 'player') {
-        grid[this.row][this.col].containsPlayer = true;
-        this.inputEnabled = false;
+        
+        if (this.team == 'player') {
+            grid[this.row][this.col].containsPlayer = true;
+            this.inputEnabled = false;
 
-    } else {
-        grid[this.row][this.col].containsEnemy = true;
-    }    
+        } else {
+            grid[this.row][this.col].containsEnemy = true;
+        }
 
-    // Actually add the sprite to the game
-    Strategy.game.add.existing(this);
-},
+        Strategy.game.add.existing(this);
+    },
 
-Unit.prototype = Object.create(Phaser.Sprite.prototype);
+    Unit.prototype = Object.create(Phaser.Sprite.prototype);
 Unit.prototype.constructor = Unit;
 
-// Creates a health bar as a child sprite of the unit
-// The healthbar consists of a green foreground image
-// and a red background image. updateHealthBar adjusts the 
-// width of the foreground healthbar to show more red as the
-// unit loses health or more green if the unit gets health
+
 Unit.prototype.addHealthBar = function () {
     // Add red background to represent missing health
     var healthbarbg = this.game.add.sprite(0, -10, 'healthbar');
-    healthbarbg.anchor.setTo(-0.5,-0.5);
+    // healthbarbg.anchor.setTo(-0.5,-0.5);
     healthbarbg.cropEnabled = true;
     healthbarbg.tint = 0xFF0000;
 
     // Add green foreground to repesent current health
     var healthbarfg = this.game.add.sprite(0, -10, 'healthbar');
-    healthbarfg.anchor.setTo(-0.5,-0.5);
+    // healthbarfg.anchor.setTo(-0.5,-0.5);
     healthbarfg.cropEnabled = true;
     healthbarfg.tint = 0x00FF00;
 
-    // add heathbars to unit sprite
+    // attach healthbar to unit
     this.addChild(healthbarbg);
     this.addChild(healthbarfg);
 }
 
-// Given a change in health, healthDelta,
-// Updates the unit's health and then
-// Updates the unit's healthbar foreground sprite
-// to reflect the current fraction of health remaining
+
 Unit.prototype.updateHealth = function (healthDelta) {
     this.health += healthDelta;
 
@@ -130,42 +125,42 @@ Unit.prototype.updateHealth = function (healthDelta) {
     healthbarfg.width = maxWidth * (this.health / this.maxHealth);
 }
 
-// TODO: Break this up into multiple functions
 
 // Given a starting and ending tile, moves the unit
 // along a path and updates the instance position variables
 Unit.prototype.followPath = function (unitPath) {
-        // stores cost of the tile that the unit is currently on
-        var currentCost = 0;
-        var playerTween = this.game.add.tween(this);
+    // stores cost of the tile that the unit is currently on
+    var currentCost = 0;
+    var playerTween = this.game.add.tween(this);
 
-        while(unitPath.length > 0) {
-            var next = unitPath.pop();
+    while (unitPath.length > 0) {
+        var next = unitPath.pop();
 
-            // Add the location of the next tile to the tween
-            // Speed of the tween is based on the movement cost
-            // between the two tiles
-            playerTween.to({
-            x: next.col * 16, y: next.row * 16
-            }, 300 * Math.max(next.cost, currentCost), Phaser.Easing.Linear.None);
+        // Add the location of the next tile to the tween
+        // Speed of the tween is based on the movement cost
+        // between the two tiles
+        playerTween.to({
+            x: next.col * 16,
+            y: next.row * 16
+        }, 300 * Math.max(next.cost, currentCost), Phaser.Easing.Linear.None);
 
-            // store the cost of the new current tile to determine
-            // the next movement cost
-            currentCost = next.cost;
-        }
+        // store the cost of the new current tile to determine
+        // the next movement cost
+        currentCost = next.cost;
+    }
 
-        // TODO: Replace this with a context menu
-        // When the tween is done, change the turn 
-        playerTween.onComplete.add(function() {   
-            Strategy.Game.prototype.unitDidMove(this);
-            // if (turn == 'player') {
-            //     Strategy.Game.prototype.enemyTurn.call(Strategy.game.state.states["Game"]);
-            // } else {
-            //     Strategy.Game.prototype.playerTurn.call(Strategy.game.state.states["Game"]);
-            // }
-        }, this);
+    // TODO: Replace this with a context menu
+    // When the tween is done, change the turn 
+    playerTween.onComplete.add(function () {
+        Strategy.Game.prototype.unitDidMove(this);
+        // if (turn == 'player') {
+        //     Strategy.Game.prototype.enemyTurn.call(Strategy.game.state.states["Game"]);
+        // } else {
+        //     Strategy.Game.prototype.playerTurn.call(Strategy.game.state.states["Game"]);
+        // }
+    }, this);
 
-        playerTween.start();
+    playerTween.start();
 
 }
 
@@ -227,6 +222,7 @@ Strategy.Game.prototype = {
 
     create: function () {
         // set dimensions of the game
+        this.smoothed = false;
         var cols = this.game.width / this.game.global.tileSize;
         var rows = this.game.height / this.game.global.tileSize;
 
@@ -234,7 +230,7 @@ Strategy.Game.prototype = {
         for (var i = 0; i < rows; i++) {
             grid[i] = [];
             for (var j = 0; j < cols; j++) {
-                grid[i][j] = new Tile (i, j, map[i][j]);
+                grid[i][j] = new Tile(i, j, map[i][j]);
             }
         }
 
@@ -259,8 +255,8 @@ Strategy.Game.prototype = {
     // Called when turn switches from enemy to player
     playerTurn: function () {
         turn = 'player';
-
-        this.recolor(enemyUnits);
+        this.recolor(playerUnits, 0xffffff);
+        this.recolor(enemyUnits, 0x808080);
 
         // make player units clickable to show range
         var len = playerUnits.length;
@@ -273,7 +269,8 @@ Strategy.Game.prototype = {
 
     // Called when turn switches from player to enemy
     enemyTurn: function () {
-        this.recolor(playerUnits);
+        this.recolor(playerUnits, 0x808080);
+        this.recolor(enemyUnits, 0xffffff);
 
         turn = 'enemy';
         // Sample enemy behavior that randomly moves the first enemy unit one space
@@ -284,21 +281,26 @@ Strategy.Game.prototype = {
         unit.move(tile);
     },
 
-    recolor: function (unitArray) {
+    recolor: function (unitArray, tint) {
         var len = unitArray.length;
 
         for (var i = 0; i < len; i++) {
-            unitArray[i].tint = unitArray[i].color;
+            unitArray[i].tint = tint;
         }
     },
+    
 
     neighbors: function (tile) {
-        var dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+        var dirs = [
+            [-1, 0],
+            [1, 0],
+            [0, -1],
+            [0, 1]
+        ];
         var neighbors = [];
 
         var len = dirs.length
-        for (var i = 0; i < dirs.length; i++)
-        {
+        for (var i = 0; i < dirs.length; i++) {
             var row = tile.row + dirs[i][0];
             var col = tile.col + dirs[i][1];
             if (row >= 0 && row <= grid.length - 1 && col >= 0 && col <= grid[0].length - 1) {
@@ -320,8 +322,8 @@ Strategy.Game.prototype = {
         for (var i = 0; i < len; i++) {
             if (range[i].depth <= player.moves) {
                 var tile = this.game.add.sprite(range[i].col * this.game.global.tileSize,
-                                                range[i].row * this.game.global.tileSize,
-                                                'tiles');
+                    range[i].row * this.game.global.tileSize,
+                    'tiles');
                 tile.frame = 1;
                 tile.tint = 0x0000FF;
                 tile.alpha = 0.7;
@@ -334,23 +336,22 @@ Strategy.Game.prototype = {
                 if (!range[i].containsPlayer) {
                     tile.inputEnabled = true;
 
-                    tile.events.onInputOver.add(function(tile, pointer) {
+                    tile.events.onInputOver.add(function (tile, pointer) {
                         this.drawPath(grid[tile.row][tile.col], playerTile);
                         this.game.world.bringToTop(player);
                     }, this);
 
-                    tile.events.onInputDown.add(function(tile, pointer) {
+                    tile.events.onInputDown.add(function (tile, pointer) {
                         player.inputEnabled = false;
                         this.clearPath();
                         this.clearDraw();
                         player.move(grid[tile.row][tile.col]);
                     }, this);
                 }
-            }
-            else {
+            } else {
                 var tile = this.game.add.sprite(range[i].col * this.game.global.tileSize,
-                                                range[i].row * this.game.global.tileSize,
-                                                'tiles');
+                    range[i].row * this.game.global.tileSize,
+                    'tiles');
                 tile.frame = 1;
                 tile.tint = 0xFF0000;
                 tile.alpha = 0.7;
@@ -367,10 +368,10 @@ Strategy.Game.prototype = {
         this.clearPath();
         path = [];
 
-        while(to != from) {
+        while (to != from) {
             var tile = this.game.add.sprite(to.col * this.game.global.tileSize,
-                                            to.row * this.game.global.tileSize,
-                                            'tiles');
+                to.row * this.game.global.tileSize,
+                'tiles');
             tile.frame = 1;
             tile.tint = 0x00FF00;
             tile.alpha = 0.5;
@@ -380,8 +381,8 @@ Strategy.Game.prototype = {
         }
         // TODO: Find a way to combine this step into the loop?
         var tile = this.game.add.sprite(from.col * this.game.global.tileSize,
-                                        from.row * this.game.global.tileSize,
-                                        'tiles');
+            from.row * this.game.global.tileSize,
+            'tiles');
         tile.frame = 1;
         tile.tint = 0x00FF00;
         tile.alpha = 0.5;
@@ -458,7 +459,7 @@ Strategy.Game.prototype = {
     resetGrid: function () {
         for (var i = 0; i < grid.length; i++) {
             for (var j = 0; j < grid[0].length; j++) {
-                grid[i][j].depth = Infinity; 
+                grid[i][j].depth = Infinity;
             }
         }
     },
