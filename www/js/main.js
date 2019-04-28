@@ -12,4 +12,4 @@ Strategy.game.state.add('Preload', Strategy.Preload);
 Strategy.game.state.add('MainMenu', Strategy.MainMenu);
 Strategy.game.state.add('Game', Strategy.Game);
 
-Strategy.game.state.start('Boot');$
+Strategy.game.state.start('Boot');
