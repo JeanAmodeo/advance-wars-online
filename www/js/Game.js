@@ -23,32 +23,31 @@ var map = [
 ];
 
 // list of units to create at the start of the game
-//frames : 1: sword, 2:bow, 3:wizard
+var types = [{name: 'sword', frame: 0,moves: 5, range: 1, maxHealth: 10,dmg:5, weakVs:'wizard', strVs:'bow'},
+                {name: 'bow', frame: 1,moves: 3, range: 5,maxHealth: 7,dmg:5,weakVs:'sword', strVs:'wizard'},
+                {name: 'wizard', frame: 2,moves: 4, range: 3,maxHealth: 5,dmg:5,weakVs:'bow', strVs:'sword'},];
 var units = [{
-        frame: 1,
-        moves: 5,
-        range: 1,
+        type: 'sword',
         row: 1,
         col: 12,
-        maxHealth: 10,
         team: 'player'
     },
     {
-        frame: 2,
-        moves: 4,
-        range: 2,
+        type:'bow',
         row: 6,
         col: 9,
-        maxHealth: 8,
         team: 'player'
     },
     {
-        frame: 3,
-        moves: 2,
-        range: 1,
+        type: 'wizard',
         row: 2,
         col: 2,
-        maxHealth: 10,
+        team: 'enemy'
+    },
+    {
+        type: 'wizard',
+        row: 6,
+        col: 7,
         team: 'enemy'
     }
 ];
@@ -65,16 +64,37 @@ Strategy.Game = function () {};
 Unit = function (unitData) {
 
         Phaser.Sprite.call(this, Strategy.game, 16 * unitData.col, 16 * unitData.row, 'units');
-
         
-        this.frame = unitData.frame;
+        switch(unitData.type){
+            case 'sword':
+            type = types[0];
+            break;
+            case 'bow':
+            type = types[1];
+            break;
+            case 'wizard':
+            type = types[2];
+            break;
+            default:
+            type = types[1];
+            break;
+        }
+        
+        this.type = type.name;
+        this.frame = type.frame;
+        this.moves = type.moves;
+        this.range = type.range;
+        this.dmg = type.dmg;
+        this.maxHealth = type.maxHealth;
+        this.weakVs = type.weakVs;
+        this.strVs = type.strVs;
+
         this.row = unitData.row;
         this.col = unitData.col;
-        this.moves = unitData.moves;
-        this.range = unitData.range;
+        
         this.team = unitData.team;
         this.health = unitData.maxHealth;
-        this.maxHealth = unitData.maxHealth;
+        
 
         
         if (this.team == 'player') {
