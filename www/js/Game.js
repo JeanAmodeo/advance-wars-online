@@ -35,7 +35,7 @@ var enemyUnits = [];
 // either 'player' or 'enemy', keeps track of which turn it is
 // (this lets us reuse some fucntions for both turns)
 var turn = 'player';
-var actionCount = 0;
+//var actionCount = 0;
 
 Strategy.Game = function(){};
 
@@ -129,6 +129,7 @@ Unit.prototype.updateHealth = function (healthDelta) {
     // maximum of health
     //console.log(this);
     var maxWidth = this.getChildAt(0).width;
+    var playerTween = this.game.add.tween(this);
 
     // get the child healthbar foreground sprite
     var healthbarfg = this.getChildAt(1);
@@ -156,6 +157,13 @@ Unit.prototype.updateHealth = function (healthDelta) {
         }
       }
   }
+
+    playerTween.onComplete.add(function() {
+        Strategy.Game.prototype.unitDidAttack(this);
+    }, this);
+
+    playerTween.start();
+
 }
 
 // TODO: Break this up into multiple functions
@@ -222,6 +230,7 @@ Unit.prototype.move = function (to) {
     // update instance variables to reflect move
     this.row = newRow;
     this.col = newCol;
+
 }
 
 /* Creates a Tile (extends Sprite) given the following parameters:
@@ -273,12 +282,14 @@ Strategy.Game.prototype = {
             unit.addHealthBar();
 
             if (unit.team == 'player') {
-                unit.events.onInputDown.add(this.drawRange, this);
-                unit.events.onInputDown.add(this.drawRangeAttack, this);
+                unit.events.onInputDown.add(this.turnAction, this);
+                //unit.events.onInputDown.add(this.drawRange, this);
+                //unit.events.onInputDown.add(this.drawRangeAttack, this);
                 playerUnits.push(unit);
             } else {
-                unit.events.onInputDown.add(this.drawRange, this);
-                unit.events.onInputDown.add(this.drawRangeAttack, this);
+                unit.events.onInputDown.add(this.turnAction, this);
+                //unit.events.onInputDown.add(this.drawRange, this);
+                //unit.events.onInputDown.add(this.drawRangeAttack, this);
                 enemyUnits.push(unit);
             }
         }
@@ -290,6 +301,7 @@ Strategy.Game.prototype = {
     // Called when turn switches from enemy to player
     playerTurn: function () {
         turn = 'player';
+        actionCount = 0;
 
         this.recolor(enemyUnits);
 
@@ -306,6 +318,7 @@ Strategy.Game.prototype = {
     // Called when turn switches from player to enemy
     enemyTurn: function () {
       turn = 'enemy';
+      actionCount = 0;
 
       this.recolor(playerUnits);
 
@@ -343,6 +356,16 @@ Strategy.Game.prototype = {
         return neighbors;
     },
 
+    turnAction: function (player) {
+      this.drawRange(player);
+        if (!player.didAttack){
+          this.drawRangeAttack(player);
+        }
+        if (!player.didMove){
+          this.drawRange(player);
+        }
+    },
+
     drawRange: function (player) {
         this.clearDraw();
         this.clearPath();
@@ -366,7 +389,7 @@ Strategy.Game.prototype = {
 
 
                 // TODO: this part of the code should be in a more logical place
-                if (!range[i].containsPlayer && turn == 'player' || !range[i].containsEnemy && turn == 'enemy') {
+                if (!range[i].containsPlayer && !range[i].containsEnemy) {
                     tile.inputEnabled = true;
 
                     tile.events.onInputOver.add(function(tile, pointer) {
@@ -378,16 +401,9 @@ Strategy.Game.prototype = {
                         player.inputEnabled = false;
                         this.clearPath();
                         this.clearDraw();
-                        if (grid[tile.row][tile.col].containsEnemy && turn == 'player') {
-                          let target = this.getUnitToAttack(grid[tile.row][tile.col]);
-                          console.log("player vs enemy");
-                          target.updateHealth(-player.damage);
-                        } else if (grid[tile.row][tile.col].containsPlayer && turn == 'enemy') {
-                          let target = this.getUnitToAttack(grid[tile.row][tile.col]);
-                          console.log("enemy vs player");
-                          target.updateHealth(-player.damage);
-                        }
+                        //actionCount += 1;
                         player.move(grid[tile.row][tile.col]);
+                        //this.drawRangeAttack(player);
                     }, this);
                 }
             }
@@ -408,6 +424,8 @@ Strategy.Game.prototype = {
     },
 
     drawRangeAttack: function (player) {
+        this.clearDraw();
+        this.clearPath();
         var playerTile = grid[player.row][player.col];
 
         range = this.getRangeAttack(player);
@@ -430,16 +448,26 @@ Strategy.Game.prototype = {
                 if (!range[i].containsPlayer && turn == 'player' || !range[i].containsEnemy && turn == 'enemy') {
                     tile.inputEnabled = true;
 
+                    tile.events.onInputOver.add(function(tile, pointer) {
+                        this.drawPath(grid[tile.row][tile.col], playerTile);
+                        this.game.world.bringToTop(player);
+                    }, this);
+
                     tile.events.onInputDown.add(function(tile, pointer) {
                         player.inputEnabled = false;
                         if (grid[tile.row][tile.col].containsEnemy && turn == 'player') {
                           let target = this.getUnitToAttack(grid[tile.row][tile.col]);
                           console.log("player vs enemy");
                           target.updateHealth(-player.damage);
+                          //actionCount += 1;
                         } else if (grid[tile.row][tile.col].containsPlayer && turn == 'enemy') {
                           let target = this.getUnitToAttack(grid[tile.row][tile.col]);
                           console.log("enemy vs player");
                           target.updateHealth(-player.damage);
+                          //actionCount += 1;
+                        } else {
+                          console.log("no attack");
+                          player.updateHealth(0);
                         }
                     }, this);
                 }
@@ -588,9 +616,9 @@ Strategy.Game.prototype = {
 
                 var nextDepth = current.depth + Math.max(neighbors[i].cost, current.cost);
 
-                if (neighbors[i].isObstacle || nextDepth > player.moves) {
-                    nextDepth = Math.max(current.depth + 1, player.moves + 1);
-                    if (nextDepth > player.moves + player.range) {
+                if (neighbors[i].isObstacle || nextDepth > player.range) {
+                    nextDepth = Math.max(current.depth + 1, player.range + 1);
+                    if (nextDepth > player.range) {
                         continue;
                     }
                 }
@@ -638,8 +666,10 @@ Strategy.Game.prototype = {
         var unitArray;
 
         unit.didMove = true;
+        if (unit.didAttack) {
+          unit.tint = 0xAAAAAA;
+        }
 
-        unit.tint = 0xAAAAAA;
 
         if (unit.team == 'player') {
             unitArray = playerUnits;
@@ -666,8 +696,9 @@ Strategy.Game.prototype = {
         var unitArray;
 
         unit.didAttack = true;
-
-        unit.tint = 0xAAAAAA;
+        if (unit.didMove) {
+          unit.tint = 0xAAAAAA;
+        }
 
         if (unit.team == 'player') {
             unitArray = playerUnits;
