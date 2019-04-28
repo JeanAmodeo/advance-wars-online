@@ -1,216 +1,200 @@
+// keep track of the translucent tiles drawn on top of the actual grid
+// to represent movement range (keeping track in this way makes
+// it easier to delete them later)
 var path = [];
 var drawn = [];
+var targetTile = [];
 
 // keep track of all of the tiles on the map
 var grid = [];
-var map = [
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 2, 2, 2, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 2, 2, 2, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-];
+var map = [[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+           [1,1,1,1,1,1,1,1,2,2,2,1,1,1,1,1,1,1,1,1],
+           [1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1],
+           [1,1,2,2,2,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1],
+           [1,1,2,2,2,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1],
+           [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+           [1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+           [1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+           [1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+           [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+           [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+           [1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1],
+           [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+           [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+           [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],];
 
 // list of units to create at the start of the game
-var types = [{
-        name: 'sword',
-        frame: 0,
-        moves: 5,
-        range: 1,
-        maxHealth: 10,
-        dmg: 5,
-        weakVs: 'wizard',
-        strVs: 'bow'
-    },
-    {
-        name: 'bow',
-        frame: 1,
-        moves: 3,
-        range: 5,
-        maxHealth: 7,
-        dmg: 5,
-        weakVs: 'sword',
-        strVs: 'wizard'
-    },
-    {
-        name: 'wizard',
-        frame: 2,
-        moves: 4,
-        range: 3,
-        maxHealth: 5,
-        dmg: 5,
-        weakVs: 'bow',
-        strVs: 'sword'
-    },
-];
-var units = [{
-        type: 'sword',
-        row: 1,
-        col: 12,
-        team: 'player'
-    },
-    {
-        type: 'bow',
-        row: 6,
-        col: 9,
-        team: 'player'
-    },
-    {
-        type: 'wizard',
-        row: 2,
-        col: 2,
-        team: 'enemy'
-    },
-    {
-        type: 'wizard',
-        row: 6,
-        col: 7,
-        team: 'enemy'
-    }
-];
+var units = [{id:1, moves: 9, range: 1, color: 0x00FF00, row: 1, col: 12, maxHealth: 5, damage:6, team: 'player'},
+             {id:2, moves: 8, range: 2, color: 0xFF00FF, row: 6, col: 9, maxHealth: 4, damage:6, team: 'player'},
+             {id:3, moves: 5, range: 1, color: 0xFF0000, row: 2, col: 2, maxHealth: 5, damage:5, team: 'enemy'},
+             {id:4, moves: 10, range: 3, color: 0xFFFF00, row: 9, col: 1, maxHealth: 5, damage:8, team: 'enemy'}];
 
-// contains all units
+// keep track of all of the units
 var playerUnits = [];
 var enemyUnits = [];
 
-// contains the current player
+// either 'player' or 'enemy', keeps track of which turn it is
+// (this lets us reuse some fucntions for both turns)
 var turn = 'player';
+//var actionCount = 0;
 
-Strategy.Game = function () {};
+Strategy.Game = function(){};
 
+/* Class for defining a unit (player or enemy). Extends the Phaser Sprite
+ * prototype. Unit is constructed by passing in unitData object.
+ *
+ * Unit data should include:
+ * moves: integer movement range
+ * range: integer attack range
+ * color: hex color for square (temp)
+ * row: integer starting row on the map (0-indexed)
+ * col: integer starting col on the map (0-indexed)
+ * maxHealth: integer maximum health (assumed that units start at max health)
+ * team: string, either 'player' or 'enemy' to assign unit ownership
+ *
+ * Future Idea: It would easy to convert units from one team to another
+ *
+ */
 Unit = function (unitData) {
+    // initialize this as a phaser sprite
+    Phaser.Sprite.call(this, Strategy.game, 16 * unitData.col, 16 * unitData.row, 'tiles');
 
-        Phaser.Sprite.call(this, Strategy.game, Strategy.game.global.tileSize * unitData.col, Strategy.game.global.tileSize * unitData.row, unitData.type);
+    this.id = unitData.id;
 
-        switch (unitData.type) {
-            case 'sword':
-                type = types[0];
-                break;
-            case 'bow':
-                type = types[1];
-                break;
-            case 'wizard':
-                type = types[2];
-                break;
-            default:
-                type = types[1];
-                break;
-        }
+    // set graphics properties
+    this.frame = 1;
+    this.anchor.setTo(-0.5,-0.5);
+    this.scale.setTo(0.5);
+    this.color = unitData.color;
+    this.tint = unitData.color;
 
-        this.type = type.name;
-        this.frame = type.frame;
-        this.moves = type.moves;
-        this.range = type.range;
-        this.dmg = type.dmg;
-        this.maxHealth = type.maxHealth;
-        this.weakVs = type.weakVs;
-        this.strVs = type.strVs;
+    // copy parameters to instance variables
+    this.row = unitData.row;
+    this.col = unitData.col;
+    this.moves = unitData.moves;
+    this.range = unitData.range;
+    this.team = unitData.team;
+    this.health = unitData.maxHealth;
+    this.maxHealth = unitData.maxHealth;
+    this.damage = unitData.damage;
 
-        this.row = unitData.row;
-        this.col = unitData.col;
+    // mark the starting tile as containing a player or enemy
+    // based on the team of the unit
+    if (this.team == 'player') {
+        grid[this.row][this.col].containsPlayer = true;
+        this.inputEnabled = false;
 
-        this.team = unitData.team;
-        this.health = unitData.maxHealth;
+    } else {
+        grid[this.row][this.col].containsEnemy = true;
+        this.inputEnabled = false;
+    }
 
-        var idle = this.animations.add('idle');
-        this.animations.play('idle', 5, true);
+    // Actually add the sprite to the game
+    Strategy.game.add.existing(this);
+},
 
-
-
-        if (this.team == 'player') {
-            grid[this.row][this.col].containsPlayer = true;
-            this.inputEnabled = false;
-
-        } else {
-            grid[this.row][this.col].containsEnemy = true;
-        }
-
-        Strategy.game.add.existing(this);
-    },
-
-    Unit.prototype = Object.create(Phaser.Sprite.prototype);
+Unit.prototype = Object.create(Phaser.Sprite.prototype);
 Unit.prototype.constructor = Unit;
 
-
+// Creates a health bar as a child sprite of the unit
+// The healthbar consists of a green foreground image
+// and a red background image. updateHealthBar adjusts the
+// width of the foreground healthbar to show more red as the
+// unit loses health or more green if the unit gets health
 Unit.prototype.addHealthBar = function () {
     // Add red background to represent missing health
     var healthbarbg = this.game.add.sprite(0, -10, 'healthbar');
-    // healthbarbg.anchor.setTo(-0.5,-0.5);
+    healthbarbg.anchor.setTo(-0.5,-0.5);
     healthbarbg.cropEnabled = true;
     healthbarbg.tint = 0xFF0000;
 
     // Add green foreground to repesent current health
     var healthbarfg = this.game.add.sprite(0, -10, 'healthbar');
-    // healthbarfg.anchor.setTo(-0.5,-0.5);
+    healthbarfg.anchor.setTo(-0.5,-0.5);
     healthbarfg.cropEnabled = true;
     healthbarfg.tint = 0x00FF00;
 
-    // attach healthbar to unit
+    // add heathbars to unit sprite
     this.addChild(healthbarbg);
     this.addChild(healthbarfg);
 }
 
-
+// Given a change in health, healthDelta,
+// Updates the unit's health and then
+// Updates the unit's healthbar foreground sprite
+// to reflect the current fraction of health remaining
 Unit.prototype.updateHealth = function (healthDelta) {
     this.health += healthDelta;
 
     // get the width of the bar background (red part) to represent
     // maximum of health
-    var maxWidth = this.getChild(0).width;
+    //console.log(this);
+    var maxWidth = this.getChildAt(0).width;
 
     // get the child healthbar foreground sprite
-    var healthbarfg = this.getChild(1);
+    var healthbarfg = this.getChildAt(1);
 
     // update the width based on fraction of health remaining
     healthbarfg.width = maxWidth * (this.health / this.maxHealth);
+
+    if (this.health <= 0) {
+      this.destroy();
+      if(turn == 'enemy'){
+        for (var i = 0; i < playerUnits.length; i++) {
+          var obj = playerUnits[i];
+          if (obj.id == this.id) {
+            playerUnits.splice(i, 1);
+            grid[this.col][this.row].containsPlayer = false;
+          }
+        }
+      } else {
+        for (var i = 0; i < enemyUnits.length; i++) {
+          var obj = enemyUnits[i];
+          if (obj.id == this.id) {
+            enemyUnits.splice(i, 1);
+            grid[this.col][this.row].containsEnemy = false;
+          }
+        }
+      }
+  }
 }
 
+// TODO: Break this up into multiple functions
 
 // Given a starting and ending tile, moves the unit
 // along a path and updates the instance position variables
 Unit.prototype.followPath = function (unitPath) {
-    // stores cost of the tile that the unit is currently on
-    var currentCost = 0;
-    var playerTween = this.game.add.tween(this);
+        // stores cost of the tile that the unit is currently on
+        var currentCost = 0;
+        var playerTween = this.game.add.tween(this);
 
-    while (unitPath.length > 0) {
-        var next = unitPath.pop();
+        while(unitPath.length > 0) {
+            var next = unitPath.pop();
 
-        // Add the location of the next tile to the tween
-        // Speed of the tween is based on the movement cost
-        // between the two tiles
-        playerTween.to({
-            x: next.col * 16,
-            y: next.row * 16
-        }, 300 * Math.max(next.cost, currentCost), Phaser.Easing.Linear.None);
+            // Add the location of the next tile to the tween
+            // Speed of the tween is based on the movement cost
+            // between the two tiles
+            playerTween.to({
+            x: next.col * 16, y: next.row * 16
+            }, 300 * Math.max(next.cost, currentCost), Phaser.Easing.Linear.None);
 
-        // store the cost of the new current tile to determine
-        // the next movement cost
-        currentCost = next.cost;
-    }
+            // store the cost of the new current tile to determine
+            // the next movement cost
+            currentCost = next.cost;
+        }
 
-    // TODO: Replace this with a context menu
-    // When the tween is done, change the turn 
-    playerTween.onComplete.add(function () {
-        Strategy.Game.prototype.unitDidMove(this);
-        // if (turn == 'player') {
-        //     Strategy.Game.prototype.enemyTurn.call(Strategy.game.state.states["Game"]);
-        // } else {
-        //     Strategy.Game.prototype.playerTurn.call(Strategy.game.state.states["Game"]);
-        // }
-    }, this);
+        // TODO: Replace this with a context menu
+        // When the tween is done, change the turn
+        playerTween.onComplete.add(function() {
+            Strategy.Game.prototype.unitDidMove(this);
+            // if (turn == 'player') {
+            //     Strategy.Game.prototype.enemyTurn.call(Strategy.game.state.states["Game"]);
+            // } else {
+            //     Strategy.Game.prototype.playerTurn.call(Strategy.game.state.states["Game"]);
+            // }
+        }, this);
 
-    playerTween.start();
+        playerTween.start();
 
 }
 
@@ -239,6 +223,7 @@ Unit.prototype.move = function (to) {
     // update instance variables to reflect move
     this.row = newRow;
     this.col = newCol;
+
 }
 
 /* Creates a Tile (extends Sprite) given the following parameters:
@@ -247,29 +232,15 @@ Unit.prototype.move = function (to) {
  * type: integer representing tile type (currently 0 represents an obstacle,
  * all other positive integers correspond to move cost) */
 Tile = function (row, col, type) {
-    if (type!=0) {
-        // create sprite
-        Phaser.Sprite.call(this, Strategy.game, Strategy.game.global.tileSize * col, Strategy.game.global.tileSize * row, 'tiles');
+    // create sprite
+    Phaser.Sprite.call(this, Strategy.game, Strategy.game.global.tileSize * col, Strategy.game.global.tileSize * row, 'tiles');
 
-        // set instance variables
-        this.frame = type
-        this.isObstacle = !type;
-        this.cost = type;
-        this.row = row;
-        this.col = col;
-    } else {
-        // create sprite
-        Phaser.Sprite.call(this, Strategy.game, Strategy.game.global.tileSize * col, Strategy.game.global.tileSize * row, 'water');
-
-        // set instance variables
-        this.frame = type
-        this.isObstacle = !type;
-        this.cost = type;
-        this.row = row;
-        this.col = col;
-        var flow = this.animations.add('flow');
-        this.animations.play('flow', 5, true);
-    }
+    // set instance variables
+    this.frame = type
+    this.isObstacle = !type;
+    this.cost = type;
+    this.row = row;
+    this.col = col;
 
     // it is important to set the initial search depth to inifinty
     // so that the movement range search works properly
@@ -286,7 +257,6 @@ Strategy.Game.prototype = {
 
     create: function () {
         // set dimensions of the game
-        this.smoothed = false;
         var cols = this.game.width / this.game.global.tileSize;
         var rows = this.game.height / this.game.global.tileSize;
 
@@ -294,7 +264,7 @@ Strategy.Game.prototype = {
         for (var i = 0; i < rows; i++) {
             grid[i] = [];
             for (var j = 0; j < cols; j++) {
-                grid[i][j] = new Tile(i, j, map[i][j]);
+                grid[i][j] = new Tile (i, j, map[i][j]);
             }
         }
 
@@ -305,9 +275,14 @@ Strategy.Game.prototype = {
             unit.addHealthBar();
 
             if (unit.team == 'player') {
-                unit.events.onInputDown.add(this.drawRange, this);
+                unit.events.onInputDown.add(this.turnAction, this);
+                //unit.events.onInputDown.add(this.drawRange, this);
+                //unit.events.onInputDown.add(this.drawRangeAttack, this);
                 playerUnits.push(unit);
             } else {
+                unit.events.onInputDown.add(this.turnAction, this);
+                //unit.events.onInputDown.add(this.drawRange, this);
+                //unit.events.onInputDown.add(this.drawRangeAttack, this);
                 enemyUnits.push(unit);
             }
         }
@@ -319,52 +294,52 @@ Strategy.Game.prototype = {
     // Called when turn switches from enemy to player
     playerTurn: function () {
         turn = 'player';
-        this.recolor(playerUnits, 0xffffff);
-        this.recolor(enemyUnits, 0x808080);
+        actionCount = 0;
+
+        this.recolor(enemyUnits);
 
         // make player units clickable to show range
         var len = playerUnits.length;
         for (var i = 0; i < len; i++) {
             var unit = playerUnits[i];
             unit.didMove = false;
+            unit.didAttack = false;
             unit.inputEnabled = true;
         }
     },
 
     // Called when turn switches from player to enemy
     enemyTurn: function () {
-        this.recolor(playerUnits, 0x808080);
-        this.recolor(enemyUnits, 0xffffff);
+      turn = 'enemy';
+      actionCount = 0;
 
-        turn = 'enemy';
-        // Sample enemy behavior that randomly moves the first enemy unit one space
-        var unit = enemyUnits[0];
-        var neighbors = this.neighbors(grid[unit.row][unit.col]);
-        var tile = neighbors[Math.floor(Math.random() * neighbors.length)];
-        tile.cameFrom = grid[unit.row][unit.col];
-        unit.move(tile);
+      this.recolor(playerUnits);
+
+      // make player units clickable to show range
+      var len = enemyUnits.length;
+      for (var i = 0; i < len; i++) {
+          var unit = enemyUnits[i];
+          unit.didMove = false;
+          unit.didAttack = false;
+          unit.inputEnabled = true;
+      }
     },
 
-    recolor: function (unitArray, tint) {
+    recolor: function (unitArray) {
         var len = unitArray.length;
 
         for (var i = 0; i < len; i++) {
-            unitArray[i].tint = tint;
+            unitArray[i].tint = unitArray[i].color;
         }
     },
 
-
     neighbors: function (tile) {
-        var dirs = [
-            [-1, 0],
-            [1, 0],
-            [0, -1],
-            [0, 1]
-        ];
+        var dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
         var neighbors = [];
 
         var len = dirs.length
-        for (var i = 0; i < dirs.length; i++) {
+        for (var i = 0; i < dirs.length; i++)
+        {
             var row = tile.row + dirs[i][0];
             var col = tile.col + dirs[i][1];
             if (row >= 0 && row <= grid.length - 1 && col >= 0 && col <= grid[0].length - 1) {
@@ -372,6 +347,38 @@ Strategy.Game.prototype = {
             }
         }
         return neighbors;
+    },
+
+    turnAction: function (player) {
+      this.drawRange(player);
+        if (!player.didAttack){
+          this.drawRangeAttack(player);
+        }
+        if (!player.didMove){
+          this.drawRange(player);
+        }
+    },
+
+    drawTarget: function(target){
+      this.clearTarget();
+      //targetTile = [];
+      var tile = this.game.add.sprite(target.col * this.game.global.tileSize,
+                                      target.row * this.game.global.tileSize,
+                                      'tiles');
+      tile.frame = 1;
+      tile.tint = 0x0F00F0;
+      tile.alpha = 0.5;
+
+      targetTile.push(tile);
+      //console.log(targetTile);
+    },
+
+    clearTarget: function(){
+      //console.log(targetTile);
+      for (var i = 0; i < targetTile.length; i++){
+        targetTile[i].destroy();
+        targetTile = [];
+      }
     },
 
     drawRange: function (player) {
@@ -386,8 +393,8 @@ Strategy.Game.prototype = {
         for (var i = 0; i < len; i++) {
             if (range[i].depth <= player.moves) {
                 var tile = this.game.add.sprite(range[i].col * this.game.global.tileSize,
-                    range[i].row * this.game.global.tileSize,
-                    'tiles');
+                                                range[i].row * this.game.global.tileSize,
+                                                'tiles');
                 tile.frame = 1;
                 tile.tint = 0x0000FF;
                 tile.alpha = 0.7;
@@ -397,25 +404,102 @@ Strategy.Game.prototype = {
 
 
                 // TODO: this part of the code should be in a more logical place
-                if (!range[i].containsPlayer) {
+                if (!range[i].containsPlayer && !range[i].containsEnemy) {
                     tile.inputEnabled = true;
 
-                    tile.events.onInputOver.add(function (tile, pointer) {
+                    tile.events.onInputOver.add(function(tile, pointer) {
                         this.drawPath(grid[tile.row][tile.col], playerTile);
                         this.game.world.bringToTop(player);
                     }, this);
 
-                    tile.events.onInputDown.add(function (tile, pointer) {
-                        player.inputEnabled = false;
+                    tile.events.onInputDown.add(function(tile, pointer) {
+                        //player.inputEnabled = false;
                         this.clearPath();
                         this.clearDraw();
+                        //actionCount += 1;
                         player.move(grid[tile.row][tile.col]);
+                        //this.drawRangeAttack(player);
                     }, this);
                 }
-            } else {
+            }
+            else {
                 var tile = this.game.add.sprite(range[i].col * this.game.global.tileSize,
-                    range[i].row * this.game.global.tileSize,
-                    'tiles');
+                                                range[i].row * this.game.global.tileSize,
+                                                'tiles');
+                tile.frame = 1;
+                tile.tint = 0xFF0000;
+                tile.alpha = 0.7;
+                tile.row = range[i].row;
+                tile.col = range[i].col;
+                drawn.push(tile);
+            }
+        }
+
+        this.moveUnitsToTop();
+    },
+
+    drawRangeAttack: function (player) {
+        this.clearDraw();
+        this.clearPath();
+        var playerTile = grid[player.row][player.col];
+
+        range = this.getRangeAttack(player);
+
+        var len = range.length;
+        for (var i = 0; i < len; i++) {
+            if (range[i].depth <= player.moves) {
+                var tile = this.game.add.sprite(range[i].col * this.game.global.tileSize,
+                                                range[i].row * this.game.global.tileSize,
+                                                'tiles');
+                tile.frame = 1;
+                tile.tint = 0xFF0000;
+                tile.alpha = 0.7;
+                tile.row = range[i].row;
+                tile.col = range[i].col;
+                drawn.push(tile);
+
+
+                // TODO: this part of the code should be in a more logical place
+                if (!range[i].containsPlayer && turn == 'player' || !range[i].containsEnemy && turn == 'enemy') {
+                    tile.inputEnabled = true;
+
+                    tile.events.onInputOver.add(function(tile, pointer) {
+                        this.drawTarget(grid[tile.row][tile.col]);
+                        this.game.world.bringToTop(player);
+                    }, this);
+
+                    tile.events.onInputDown.add(function(tile, pointer) {
+                        player.inputEnabled = false;
+                        if (grid[tile.row][tile.col].containsEnemy && turn == 'player') {
+                          let target = this.getUnitToAttack(grid[tile.row][tile.col]);
+                          console.log("player vs enemy");
+                          target.updateHealth(-player.damage);
+                          this.unitDidAttack(player);
+                          this.clearDraw();
+                          this.clearTarget();
+                          //actionCount += 1;
+                        } else if (grid[tile.row][tile.col].containsPlayer && turn == 'enemy') {
+                          let target = this.getUnitToAttack(grid[tile.row][tile.col]);
+                          console.log("enemy vs player");
+                          target.updateHealth(-player.damage);
+                          this.unitDidAttack(player);
+                          this.clearDraw();
+                          this.clearTarget();
+                          //actionCount += 1;
+                        } else {
+                          console.log("no attack");
+                          player.updateHealth(0);
+                          this.unitDidAttack(player);
+                          this.clearDraw();
+                          this.clearTarget();
+                        }
+                    }, this);
+                }
+            }
+            else {
+                var tile = this.game.add.sprite(range[i].col * this.game.global.tileSize,
+                                                range[i].row * this.game.global.tileSize,
+                                                'tiles');
                 tile.frame = 1;
                 tile.tint = 0xFF0000;
                 tile.alpha = 0.7;
@@ -432,10 +516,10 @@ Strategy.Game.prototype = {
         this.clearPath();
         path = [];
 
-        while (to != from) {
+        while(to != from) {
             var tile = this.game.add.sprite(to.col * this.game.global.tileSize,
-                to.row * this.game.global.tileSize,
-                'tiles');
+                                            to.row * this.game.global.tileSize,
+                                            'tiles');
             tile.frame = 1;
             tile.tint = 0x00FF00;
             tile.alpha = 0.5;
@@ -445,8 +529,8 @@ Strategy.Game.prototype = {
         }
         // TODO: Find a way to combine this step into the loop?
         var tile = this.game.add.sprite(from.col * this.game.global.tileSize,
-            from.row * this.game.global.tileSize,
-            'tiles');
+                                        from.row * this.game.global.tileSize,
+                                        'tiles');
         tile.frame = 1;
         tile.tint = 0x00FF00;
         tile.alpha = 0.5;
@@ -461,6 +545,22 @@ Strategy.Game.prototype = {
         }
 
         path = [];
+    },
+
+    getUnitToAttack: function (tile){
+      if (turn == 'player') {
+        for (var i = 0; i < enemyUnits.length; i++) {
+          if (tile.row == enemyUnits[i].row && tile.col == enemyUnits[i].col ) {
+            return enemyUnits[i];
+          }
+        }
+      } else {
+        for (var i = 0; i < playerUnits.length; i++) {
+          if (tile.row == playerUnits[i].row && tile.col == playerUnits[i].col ) {
+            return playerUnits[i];
+          }
+        }
+      }
     },
 
     getRange: function (player) {
@@ -489,11 +589,18 @@ Strategy.Game.prototype = {
 
                 var nextDepth = current.depth + Math.max(neighbors[i].cost, current.cost);
 
-                if (neighbors[i].isObstacle || neighbors[i].containsEnemy || nextDepth > player.moves) {
+                if (neighbors[i].isObstacle || nextDepth > player.moves) {
                     nextDepth = Math.max(current.depth + 1, player.moves + 1);
                     if (nextDepth > player.moves + player.range) {
                         continue;
                     }
+                }
+
+                if (neighbors[i].containsEnemy || neighbors[i].containsPlayer) {
+                    /*nextDepth = Math.max(current.depth + 1, player.moves + 1);
+                    if (nextDepth > player.moves + player.range) {
+                        continue;
+                    }*/
                 }
 
                 if (nextDepth < neighbors[i].depth) {
@@ -504,6 +611,57 @@ Strategy.Game.prototype = {
             }
         }
 
+        return visited;
+    },
+
+    getRangeAttack: function (player) {
+        this.resetGrid();
+        var visited = [];
+        var frontier = [];
+
+        var tile = grid[player.row][player.col];
+        tile.depth = 0;
+
+        frontier.push(tile);
+        visited.push(tile);
+
+        while (frontier.length != 0) {
+            // get the first tile in the queue
+            var current = frontier.shift();
+            if (visited.indexOf(current) == -1 && !current.isObstacle) {
+                visited.push(current);
+            }
+
+            // get all of the neighbors of the current tile
+            var neighbors = this.neighbors(current);
+            var len = neighbors.length;
+
+            for (var i = 0; i < len; i++) {
+
+                var nextDepth = current.depth + Math.max(neighbors[i].cost, current.cost);
+
+                if (neighbors[i].isObstacle || nextDepth > player.range) {
+                    nextDepth = Math.max(current.depth + 1, player.range + 1);
+                    if (nextDepth > player.range) {
+                        continue;
+                    }
+                }
+
+                if (neighbors[i].containsEnemy || neighbors[i].containsPlayer) {
+                    /*nextDepth = Math.max(current.depth + 1, player.moves + 1);
+                    if (nextDepth > player.moves + player.range) {
+                        continue;
+                    }*/
+                }
+
+                if (nextDepth < neighbors[i].depth) {
+                    neighbors[i].depth = nextDepth;
+                    neighbors[i].cameFrom = current;
+                    frontier.push(neighbors[i]);
+                }
+            }
+        }
+        
         return visited;
     },
 
@@ -532,8 +690,10 @@ Strategy.Game.prototype = {
         var unitArray;
 
         unit.didMove = true;
+        if (unit.didAttack) {
+          unit.tint = 0xAAAAAA;
+        }
 
-        unit.tint = 0xAAAAAA;
 
         if (unit.team == 'player') {
             unitArray = playerUnits;
@@ -549,6 +709,33 @@ Strategy.Game.prototype = {
             }
         }
 
+        /*if (turn == 'player') {
+            this.enemyTurn();
+        } else {
+            this.playerTurn();
+        }*/
+    },
+
+    unitDidAttack: function (unit) {
+        var unitArray;
+
+        unit.didAttack = true;
+        unit.tint = 0xAAAAAA;
+
+        if (unit.team == 'player') {
+            unitArray = playerUnits;
+        } else {
+            unitArray = enemyUnits;
+        }
+
+        var len = unitArray.length;
+
+        for (var i = 0; i < len; i++) {
+            if (!unitArray[i].didAttack) {
+                return;
+            }
+        }
+
         if (turn == 'player') {
             this.enemyTurn();
         } else {
@@ -557,11 +744,21 @@ Strategy.Game.prototype = {
     },
 
     moveUnitsToTop: function () {
+      if (turn == 'player'){
         var allUnits = playerUnits.concat(enemyUnits);
 
         var len = allUnits.length;
         for (var i = 0; i < len; i++) {
             this.game.world.bringToTop(allUnits[i]);
         }
+      } else {
+        var allUnits = enemyUnits.concat(playerUnits);
+
+        var len = allUnits.length;
+        for (var i = 0; i < len; i++) {
+            this.game.world.bringToTop(allUnits[i]);
+        }
+      }
+
     }
 };

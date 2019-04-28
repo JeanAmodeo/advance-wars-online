@@ -5,7 +5,7 @@ Strategy.Boot = function(){};
 Strategy.Boot.prototype = {
 
 	init: function() {
-		//disable multi touch
+		// disable multi touch
 		this.input.maxPointers = 1;
 
 		 //  Phaser will automatically pause if the browser tab the game is in loses focus. You can disable that here:
