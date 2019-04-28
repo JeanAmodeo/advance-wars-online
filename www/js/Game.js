@@ -3,6 +3,7 @@
 // it easier to delete them later)
 var path = [];
 var drawn = [];
+var targetTile = [];
 
 // keep track of all of the tiles on the map
 var grid = [];
@@ -129,7 +130,6 @@ Unit.prototype.updateHealth = function (healthDelta) {
     // maximum of health
     //console.log(this);
     var maxWidth = this.getChildAt(0).width;
-    var playerTween = this.game.add.tween(this);
 
     // get the child healthbar foreground sprite
     var healthbarfg = this.getChildAt(1);
@@ -157,13 +157,6 @@ Unit.prototype.updateHealth = function (healthDelta) {
         }
       }
   }
-
-    playerTween.onComplete.add(function() {
-        Strategy.Game.prototype.unitDidAttack(this);
-    }, this);
-
-    playerTween.start();
-
 }
 
 // TODO: Break this up into multiple functions
@@ -366,6 +359,28 @@ Strategy.Game.prototype = {
         }
     },
 
+    drawTarget: function(target){
+      this.clearTarget();
+      //targetTile = [];
+      var tile = this.game.add.sprite(target.col * this.game.global.tileSize,
+                                      target.row * this.game.global.tileSize,
+                                      'tiles');
+      tile.frame = 1;
+      tile.tint = 0x0F00F0;
+      tile.alpha = 0.5;
+
+      targetTile.push(tile);
+      //console.log(targetTile);
+    },
+
+    clearTarget: function(){
+      //console.log(targetTile);
+      for (var i = 0; i < targetTile.length; i++){
+        targetTile[i].destroy();
+        targetTile = [];
+      }
+    },
+
     drawRange: function (player) {
         this.clearDraw();
         this.clearPath();
@@ -398,7 +413,7 @@ Strategy.Game.prototype = {
                     }, this);
 
                     tile.events.onInputDown.add(function(tile, pointer) {
-                        player.inputEnabled = false;
+                        //player.inputEnabled = false;
                         this.clearPath();
                         this.clearDraw();
                         //actionCount += 1;
@@ -449,7 +464,7 @@ Strategy.Game.prototype = {
                     tile.inputEnabled = true;
 
                     tile.events.onInputOver.add(function(tile, pointer) {
-                        this.drawPath(grid[tile.row][tile.col], playerTile);
+                        this.drawTarget(grid[tile.row][tile.col]);
                         this.game.world.bringToTop(player);
                     }, this);
 
@@ -459,15 +474,24 @@ Strategy.Game.prototype = {
                           let target = this.getUnitToAttack(grid[tile.row][tile.col]);
                           console.log("player vs enemy");
                           target.updateHealth(-player.damage);
+                          this.unitDidAttack(player);
+                          this.clearDraw();
+                          this.clearTarget();
                           //actionCount += 1;
                         } else if (grid[tile.row][tile.col].containsPlayer && turn == 'enemy') {
                           let target = this.getUnitToAttack(grid[tile.row][tile.col]);
                           console.log("enemy vs player");
                           target.updateHealth(-player.damage);
+                          this.unitDidAttack(player);
+                          this.clearDraw();
+                          this.clearTarget();
                           //actionCount += 1;
                         } else {
                           console.log("no attack");
                           player.updateHealth(0);
+                          this.unitDidAttack(player);
+                          this.clearDraw();
+                          this.clearTarget();
                         }
                     }, this);
                 }
@@ -637,7 +661,7 @@ Strategy.Game.prototype = {
                 }
             }
         }
-
+        
         return visited;
     },
 
@@ -685,20 +709,18 @@ Strategy.Game.prototype = {
             }
         }
 
-        if (turn == 'player') {
+        /*if (turn == 'player') {
             this.enemyTurn();
         } else {
             this.playerTurn();
-        }
+        }*/
     },
 
     unitDidAttack: function (unit) {
         var unitArray;
 
         unit.didAttack = true;
-        if (unit.didMove) {
-          unit.tint = 0xAAAAAA;
-        }
+        unit.tint = 0xAAAAAA;
 
         if (unit.team == 'player') {
             unitArray = playerUnits;
