@@ -1,4 +1,3 @@
-
 var path = [];
 var drawn = [];
 
@@ -13,7 +12,7 @@ var map = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1],
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -23,9 +22,37 @@ var map = [
 ];
 
 // list of units to create at the start of the game
-var types = [{name: 'sword', frame: 0,moves: 5, range: 1, maxHealth: 10,dmg:5, weakVs:'wizard', strVs:'bow'},
-                {name: 'bow', frame: 1,moves: 3, range: 5,maxHealth: 7,dmg:5,weakVs:'sword', strVs:'wizard'},
-                {name: 'wizard', frame: 2,moves: 4, range: 3,maxHealth: 5,dmg:5,weakVs:'bow', strVs:'sword'},];
+var types = [{
+        name: 'sword',
+        frame: 0,
+        moves: 5,
+        range: 1,
+        maxHealth: 10,
+        dmg: 5,
+        weakVs: 'wizard',
+        strVs: 'bow'
+    },
+    {
+        name: 'bow',
+        frame: 1,
+        moves: 3,
+        range: 5,
+        maxHealth: 7,
+        dmg: 5,
+        weakVs: 'sword',
+        strVs: 'wizard'
+    },
+    {
+        name: 'wizard',
+        frame: 2,
+        moves: 4,
+        range: 3,
+        maxHealth: 5,
+        dmg: 5,
+        weakVs: 'bow',
+        strVs: 'sword'
+    },
+];
 var units = [{
         type: 'sword',
         row: 1,
@@ -33,7 +60,7 @@ var units = [{
         team: 'player'
     },
     {
-        type:'bow',
+        type: 'bow',
         row: 6,
         col: 9,
         team: 'player'
@@ -63,23 +90,23 @@ Strategy.Game = function () {};
 
 Unit = function (unitData) {
 
-        Phaser.Sprite.call(this, Strategy.game, 16 * unitData.col, 16 * unitData.row, 'units');
-        
-        switch(unitData.type){
+        Phaser.Sprite.call(this, Strategy.game, Strategy.game.global.tileSize * unitData.col, Strategy.game.global.tileSize * unitData.row, unitData.type);
+
+        switch (unitData.type) {
             case 'sword':
-            type = types[0];
-            break;
+                type = types[0];
+                break;
             case 'bow':
-            type = types[1];
-            break;
+                type = types[1];
+                break;
             case 'wizard':
-            type = types[2];
-            break;
+                type = types[2];
+                break;
             default:
-            type = types[1];
-            break;
+                type = types[1];
+                break;
         }
-        
+
         this.type = type.name;
         this.frame = type.frame;
         this.moves = type.moves;
@@ -91,12 +118,15 @@ Unit = function (unitData) {
 
         this.row = unitData.row;
         this.col = unitData.col;
-        
+
         this.team = unitData.team;
         this.health = unitData.maxHealth;
-        
 
-        
+        var idle = this.animations.add('idle');
+        this.animations.play('idle', 5, true);
+
+
+
         if (this.team == 'player') {
             grid[this.row][this.col].containsPlayer = true;
             this.inputEnabled = false;
@@ -217,15 +247,29 @@ Unit.prototype.move = function (to) {
  * type: integer representing tile type (currently 0 represents an obstacle,
  * all other positive integers correspond to move cost) */
 Tile = function (row, col, type) {
-    // create sprite
-    Phaser.Sprite.call(this, Strategy.game, Strategy.game.global.tileSize * col, Strategy.game.global.tileSize * row, 'tiles');
+    if (type!=0) {
+        // create sprite
+        Phaser.Sprite.call(this, Strategy.game, Strategy.game.global.tileSize * col, Strategy.game.global.tileSize * row, 'tiles');
 
-    // set instance variables
-    this.frame = type
-    this.isObstacle = !type;
-    this.cost = type;
-    this.row = row;
-    this.col = col;
+        // set instance variables
+        this.frame = type
+        this.isObstacle = !type;
+        this.cost = type;
+        this.row = row;
+        this.col = col;
+    } else {
+        // create sprite
+        Phaser.Sprite.call(this, Strategy.game, Strategy.game.global.tileSize * col, Strategy.game.global.tileSize * row, 'water');
+
+        // set instance variables
+        this.frame = type
+        this.isObstacle = !type;
+        this.cost = type;
+        this.row = row;
+        this.col = col;
+        var flow = this.animations.add('flow');
+        this.animations.play('flow', 5, true);
+    }
 
     // it is important to set the initial search depth to inifinty
     // so that the movement range search works properly
@@ -308,7 +352,7 @@ Strategy.Game.prototype = {
             unitArray[i].tint = tint;
         }
     },
-    
+
 
     neighbors: function (tile) {
         var dirs = [
