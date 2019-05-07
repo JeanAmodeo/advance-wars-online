@@ -1,6 +1,7 @@
 var path = [];
 var drawn = [];
 var targetTile = [];
+var playableTeam = "spectator";
 
 // keep track of all of the tiles on the map
 var grid = [];
@@ -145,7 +146,7 @@ Unit = function (unitData) {
     },
 
     Unit.prototype = Object.create(Phaser.Sprite.prototype);
-Unit.prototype.constructor = Unit;
+    Unit.prototype.constructor = Unit;
 
 
 Unit.prototype.addHealthBar = function () {
@@ -186,7 +187,7 @@ Unit.prototype.updateHealth = function (healthDelta) {
                     if (obj.id == this.id) {
                         console.log("delete");
                         playerUnits.splice(i, 1);
-                        grid[this.col][this.row].containsPlayer = false;
+                        grid[this.row][this.col].containsPlayer = false;
                     }
                 }
             } else {
@@ -195,7 +196,7 @@ Unit.prototype.updateHealth = function (healthDelta) {
                     if (obj.id == this.id) {
                         console.log("delete");
                         enemyUnits.splice(i, 1);
-                        grid[this.col][this.row].containsEnemy = false;
+                        grid[this.row][this.col].containsEnemy = false;
                     }
                 }
             }
@@ -241,18 +242,49 @@ Unit.prototype.updateHealth = function (healthDelta) {
 
             }
 
-            Unit.prototype.move = function (to) {
+            Unit.prototype.move = function (x, y) {
+              var to = grid[x][y];
                 var unitPath = [];
                 var from = grid[this.row][this.col];
                 var newRow = to.row;
                 var newCol = to.col;
 
+                console.log("move func");
+                console.log(to);
+
                 while (to != from) {
                     unitPath.push(to);
+                    console.log(to.cameFrom);
                     to = to.cameFrom;
                 }
 
                 this.followPath(unitPath);
+
+                // update grid properties to reflect the movement of the character
+                if (this.team == 'player') {
+                    grid[this.row][this.col].containsPlayer = false;
+                    grid[newRow][newCol].containsPlayer = true;
+                } else {
+                    grid[this.row][this.col].containsEnemy = false;
+                    grid[newRow][newCol].containsEnemy = true;
+                }
+
+                // update instance variables to reflect move
+                this.row = newRow;
+                this.col = newCol;
+            }
+
+            Unit.prototype.multiMove = function (x, y) {
+                var to = grid[x][y];
+                var from = grid[this.row][this.col];
+                var newRow = to.row;
+                var newCol = to.col;
+
+                var distance = Phaser.Math.distance(this.row,this.col,x,y);
+                var duration = distance*200;
+                var tween = this.game.add.tween(this);
+                tween.to({x:y*16,y:x*16}, duration);
+                tween.start();
 
                 // update grid properties to reflect the movement of the character
                 if (this.team == 'player') {
@@ -341,7 +373,9 @@ Unit.prototype.updateHealth = function (healthDelta) {
                     }
 
                     // star the game with the player turn
-                    this.playerTurn();
+                    Client.askNewPlayer();
+                    //this.playerTurn();
+
                 },
 
                 // Called when turn switches from enemy to player
@@ -357,7 +391,10 @@ Unit.prototype.updateHealth = function (healthDelta) {
                         var unit = playerUnits[i];
                         unit.didMove = false;
                         unit.didAttack = false;
-                        unit.inputEnabled = true;
+                        if (playableTeam == 'player') {
+                          unit.inputEnabled = true;
+                        }
+                        console.log(playableTeam);
                     }
                 },
 
@@ -374,7 +411,10 @@ Unit.prototype.updateHealth = function (healthDelta) {
                         var unit = enemyUnits[i];
                         unit.didMove = false;
                         unit.didAttack = false;
-                        unit.inputEnabled = true;
+                        if (playableTeam == 'enemy') {
+                          unit.inputEnabled = true;
+                        }
+                        console.log(playableTeam);
                     }
                 },
 
@@ -472,7 +512,9 @@ Unit.prototype.updateHealth = function (healthDelta) {
                                     // player.inputEnabled = false;
                                     this.clearPath();
                                     this.clearDraw();
-                                    player.move(grid[tile.row][tile.col]);
+                                    player.move(tile.row,tile.col);
+                                    console.log(grid[tile.row][tile.col]);
+                                    Client.moveUnitRequest(player.id, tile.row, tile.col);
                                 }, this);
                             }
                         } else {
@@ -530,6 +572,7 @@ Unit.prototype.updateHealth = function (healthDelta) {
                                         this.unitDidAttack(player);
                                         this.clearDraw();
                                         this.clearTarget();
+                                        Client.attackUnitRequest(target.id, player.id);
                                         //actionCount += 1;
                                     } else if (grid[tile.row][tile.col].containsPlayer && turn == 'enemy') {
                                         let target = this.getUnitToAttack(grid[tile.row][tile.col]);
@@ -538,6 +581,7 @@ Unit.prototype.updateHealth = function (healthDelta) {
                                         this.unitDidAttack(player);
                                         this.clearDraw();
                                         this.clearTarget();
+                                        Client.attackUnitRequest(target.id, player.id);
                                         //actionCount += 1;
                                     } else {
                                         console.log("no attack");
@@ -781,8 +825,10 @@ Unit.prototype.updateHealth = function (healthDelta) {
                     }
                     if (turn == 'player') {
                         this.enemyTurn();
+                        Client.changeTurn('enemy');
                     } else {
                         this.playerTurn();
+                        Client.changeTurn('player');
                     }
                 },
 
@@ -802,5 +848,97 @@ Unit.prototype.updateHealth = function (healthDelta) {
                             this.game.world.bringToTop(allUnits[i]);
                         }
                     }
-                }
+                },
+
+                debug: function (){
+                  console.log('debug');
+                },
+
+                getTurn: function (){
+                  return turn;
+                },
+
+                setTurn: function (t){
+                  if (t == 'player') {
+                    this.playerTurn();
+                  } else {
+                    this.enemyTurn();
+                  }
+                },
+
+                addNewPlayer:  function(id, team){
+                  playableTeam = team;
+                  console.log(team);
+                },
+
+                multiMoveUnit: function(data){
+                  console.log('move');
+                  let playerID = data.player;
+                  let player = null;
+
+                  if (turn == 'player') {
+                      for (var i = 0; i < playerUnits.length; i++) {
+                          var obj = playerUnits[i];
+                          if (obj.id == playerID) {
+                            player = obj;
+                          }
+                      }
+                  } else {
+                      for (var i = 0; i < enemyUnits.length; i++) {
+                          var obj = enemyUnits[i];
+                          if (obj.id == playerID) {
+                              player = obj;
+                          }
+                      }
+                  }
+
+
+                  let x = data.x;
+                  let y = data.y;
+                  console.log(grid[x][y]);
+                  player.multiMove(x,y);
+                },
+
+                multiAttackUnit: function(data){
+                  let targetID = data.target;
+                  let playerID = data.player;
+                  var player = null;
+                  var target = null;
+
+                  if (turn == 'player') {
+                      for (var i = 0; i < playerUnits.length; i++) {
+                          var obj = playerUnits[i];
+                          if (obj.id == playerID) {
+                            player = obj;
+                          }
+                      }
+                  } else {
+                      for (var i = 0; i < enemyUnits.length; i++) {
+                          var obj = enemyUnits[i];
+                          if (obj.id == playerID) {
+                              player = obj;
+                          }
+                      }
+                  }
+
+                  if (turn == 'enemy') {
+                      for (var i = 0; i < playerUnits.length; i++) {
+                          var obj = playerUnits[i];
+                          if (obj.id == targetID) {
+                            target = obj;
+                          }
+                      }
+                  } else {
+                      for (var i = 0; i < enemyUnits.length; i++) {
+                          var obj = enemyUnits[i];
+                          if (obj.id == targetID) {
+                              target = obj;
+                          }
+                      }
+                  }
+
+
+                  target.updateHealth(-player.dmg);
+                },
+
             };
