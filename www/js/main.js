@@ -7,6 +7,8 @@ Strategy.game.global = {
 
 };
 
+
+
 Strategy.game.state.add('Boot', Strategy.Boot);
 Strategy.game.state.add('Preload', Strategy.Preload);
 // Strategy.game.state.add('MainMenu', Strategy.MainMenu);

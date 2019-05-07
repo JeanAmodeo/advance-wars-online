@@ -1,0 +1,7 @@
+body {
+    background-color: #666;
+  }
+
+#gameContainer{
+    cursor: url(assets/images/cursor.png) 10 10,crosshair;
+}

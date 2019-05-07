@@ -10,6 +10,10 @@ Strategy.Preload.prototype = {
 		this.load.spritesheet('wizard', 'assets/images/wizard.png', 16, 16, 3);
 		this.load.spritesheet('water', 'assets/images/water.png', 16, 16, 3);
 		this.load.image('healthbar', 'assets/images/healthbar.png');
+		this.load.image('cursor', 'assets/images/cursor.png');
+		// this.load.bitmapFont('gem', 'assets/fonts/gem.png', 'assets/fonts/gem.xml');
+	
+	
 	},
 	
 	create: function() {
