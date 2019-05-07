@@ -18,8 +18,8 @@ let headers = {
 var server = require('http').Server(app);
 var io = require('socket.io').listen(server);
 
-app.use('/js',express.static(__dirname + '/www/js'));
-app.use('/assets',express.static(__dirname + '/www/assets'));
+app.use('/js',express.static(__dirname+'/www/js'));
+app.use('/assets',express.static(__dirname+'/www/assets'));
 
 app.get('/',function(req,res){
     res.sendFile(__dirname+'/www/index.html');

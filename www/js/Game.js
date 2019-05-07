@@ -28,9 +28,9 @@ var types = [{
         name: 'sword',
         frame: 0,
         moves: 5,
-        range: 1,
+        range: 2,
         maxHealth: 10,
-        dmg: 2,
+        dmg: 3,
         weakVs: 'wizard',
         strVs: 'bow'
     },
@@ -38,7 +38,7 @@ var types = [{
         name: 'bow',
         frame: 1,
         moves: 3,
-        range: 5,
+        range: 6,
         maxHealth: 7,
         dmg: 2,
         weakVs: 'sword',
@@ -48,9 +48,9 @@ var types = [{
         name: 'wizard',
         frame: 2,
         moves: 4,
-        range: 30,
+        range: 4,
         maxHealth: 5,
-        dmg: 5000,
+        dmg: 4,
         weakVs: 'bow',
         strVs: 'sword'
     },
@@ -435,13 +435,13 @@ Strategy.Game.prototype = {
             }
         }
 
-       
+          
         // start the game with the player turn
         // this.playerTurn();
         Client.askNewPlayer();
         // this.win("Purple");
         this.createText();
-        
+           
     },
 
     createText: function () {
@@ -479,16 +479,16 @@ Strategy.Game.prototype = {
         teamText =  Strategy.game.add.text(this.game.width/2, -2, playableTeam);
         teamText.anchor.set(0.5, 0);
         teamText.font = 'Arial Black';
-        teamText.fontSize = 15;
-        teamText.stroke = '#000000';
+        teamText.fontSize = 12;
+        teamText.stroke = '#ffffff';
         teamText.strokeThickness = 6;
         teamText.fill = '#ffffff';
 
         turnText =  Strategy.game.add.text(this.game.width-2, this.game.height-2, turn);
         turnText.anchor.set(1, 1);
         turnText.font = 'Arial Black';
-        turnText.fontSize = 15;
-        turnText.stroke = '#000000';
+        turnText.fontSize = 12;
+        turnText.stroke = '#fffff';
         turnText.strokeThickness = 6;
         turnText.fill = '#ffffff';
 
@@ -558,8 +558,15 @@ Strategy.Game.prototype = {
                 unit.inputEnabled = true;
             }
         }
-        this.updateText(teamText,playableTeam, '#ffffff');
-        this.updateText(turnText,turn, '#ffffff');
+        this.updateText(teamText,'\u25B0', (playableTeam == 'player' ? '#ff4242':'#ee70ff'));
+        if(turn == playableTeam)
+        {
+            this.updateText(turnText,"Your turn", '#1ce9ed');
+        }
+        else{
+            this.updateText(turnText,"Enemy turn", '#ff3f3f');
+        }
+        
     },
 
     // Called when turn switches from player to enemy
@@ -579,8 +586,14 @@ Strategy.Game.prototype = {
                 unit.inputEnabled = true;
             }
         }
-        this.updateText(teamText,playableTeam, '#ffffff');
-        this.updateText(turnText,turn, '#ffffff');
+        this.updateText(teamText,'\u25B0', (playableTeam == 'enemy' ? '#ee70ff':'#ff4242'));
+        if(turn == playableTeam)
+        {
+            this.updateText(turnText,"Your turn", '#1ce9ed');
+        }
+        else{
+            this.updateText(turnText,"Enemy turn", '#ff3f3f');
+        }
     },
 
     recolor: function (unitArray, tint) {
