@@ -1,6 +1,7 @@
 var Strategy = Strategy || {};
 
-Strategy.game = new Phaser.Game(320, 240, Phaser.AUTO, 'gameContainer');
+Strategy.game = new Phaser.Game(320, 240, Phaser.AUTO, 'gameContainer',null, false, false);
+
 
 Strategy.game.global = {
 	tileSize : 16,

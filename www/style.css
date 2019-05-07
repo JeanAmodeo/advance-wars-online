@@ -1,7 +1,15 @@
 body {
-    background-color: #666;
+    background-color: rgb(54, 54, 54);
   }
 
 #gameContainer{
     cursor: url(assets/images/cursor.png) 10 10,crosshair;
+}
+
+canvas {
+    
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
 }

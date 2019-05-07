@@ -16,9 +16,9 @@ var map = [
     [0, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 3, 3, 3, 1, 1, 1, 1, 0],
     [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 0],
     [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-    [0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-    [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-    [0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0],
+    [0, 0, 1, 3, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+    [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ];
 
@@ -345,7 +345,12 @@ Strategy.Game.prototype = {
 
     create: function () {
         // set dimensions of the game
-        this.smoothed = false;
+        this.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
+        //this.scale.pageAlignHorizontally = true;*
+        this.scale.setUserScale(2, 2, 0, 0);
+        this.scale.pageAlignVertically = true;
+        this.game.stage.smoothed = false;
+        
 
         var cols = this.game.width / this.game.global.tileSize;
         var rows = this.game.height / this.game.global.tileSize;
