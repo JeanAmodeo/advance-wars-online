@@ -1,6 +1,7 @@
 var path = [];
 var drawn = [];
 var targetTile = [];
+var playableTeam = "spectator";
 
 // keep track of all of the tiles on the map
 var grid = [];
@@ -47,12 +48,13 @@ var types = [{
         name: 'wizard',
         frame: 2,
         moves: 4,
-        range: 3,
+        range: 30,
         maxHealth: 5,
-        dmg: 5,
+        dmg: 5000,
         weakVs: 'bow',
         strVs: 'sword'
     },
+    
 ];
 var units = [{
         id: 1,
@@ -95,8 +97,33 @@ var units = [{
         row: 10,
         col: 14,
         team: 'player'
-    },
+    }
 ];
+
+// var units = [
+    
+//         {
+//                     id: 5,
+//                     type: 'sword',
+//                     row: 12,
+//                     col: 6,
+//                     team: 'enemy'
+//                 },
+//                 {
+//                     id: 6,
+//                     type: 'wizard',
+//                     row: 10,
+//                     col: 14,
+//                     team: 'player'
+//                 },
+//                 {
+//                     id: 7,
+//                     type: 'wizard',
+//                     row: 10,
+//                     col: 14,
+//                     team: 'player'
+//                 }
+//     ];
 
 // contains all units
 var playerUnits = [];
@@ -273,7 +300,8 @@ Unit.prototype.followPath = function (unitPath) {
 
 }
 
-Unit.prototype.move = function (to) {
+Unit.prototype.move = function (x, y) {
+    var to = grid[x][y];
     var unitPath = [];
     var from = grid[this.row][this.col];
     var newRow = to.row;
@@ -285,6 +313,35 @@ Unit.prototype.move = function (to) {
     }
 
     this.followPath(unitPath);
+
+    // update grid properties to reflect the movement of the character
+    if (this.team == 'player') {
+        grid[this.row][this.col].containsPlayer = false;
+        grid[newRow][newCol].containsPlayer = true;
+    } else {
+        grid[this.row][this.col].containsEnemy = false;
+        grid[newRow][newCol].containsEnemy = true;
+    }
+
+    // update instance variables to reflect move
+    this.row = newRow;
+    this.col = newCol;
+}
+
+Unit.prototype.multiMove = function (x, y) {
+    var to = grid[x][y];
+    var from = grid[this.row][this.col];
+    var newRow = to.row;
+    var newCol = to.col;
+
+    var distance = Phaser.Math.distance(this.row, this.col, x, y);
+    var duration = distance * 200;
+    var tween = this.game.add.tween(this);
+    tween.to({
+        x: y * 16,
+        y: x * 16
+    }, duration);
+    tween.start();
 
     // update grid properties to reflect the movement of the character
     if (this.team == 'player') {
@@ -350,7 +407,7 @@ Strategy.Game.prototype = {
         this.scale.setUserScale(2, 2, 0, 0);
         this.scale.pageAlignVertically = true;
         this.game.stage.smoothed = false;
-        
+
 
         var cols = this.game.width / this.game.global.tileSize;
         var rows = this.game.height / this.game.global.tileSize;
@@ -378,10 +435,13 @@ Strategy.Game.prototype = {
             }
         }
 
-        this.createText();
+       
         // start the game with the player turn
-        this.playerTurn();
+        // this.playerTurn();
+        Client.askNewPlayer();
         // this.win("Purple");
+        this.createText();
+        
     },
 
     createText: function () {
@@ -416,17 +476,35 @@ Strategy.Game.prototype = {
         enemyText.strokeThickness = 6;
         enemyText.fill = '#ffffff';
 
+        teamText =  Strategy.game.add.text(this.game.width/2, -2, playableTeam);
+        teamText.anchor.set(0.5, 0);
+        teamText.font = 'Arial Black';
+        teamText.fontSize = 15;
+        teamText.stroke = '#000000';
+        teamText.strokeThickness = 6;
+        teamText.fill = '#ffffff';
+
+        turnText =  Strategy.game.add.text(this.game.width-2, this.game.height-2, turn);
+        turnText.anchor.set(1, 1);
+        turnText.font = 'Arial Black';
+        turnText.fontSize = 15;
+        turnText.stroke = '#000000';
+        turnText.strokeThickness = 6;
+        turnText.fill = '#ffffff';
+
+
 
 
     },
 
-    win(team) {
+    win: function(team) {
+
         var color = '#f44242';
         if (team != "Red") color = '#ee70ff';
 
 
-        graphics = this.game.add.graphics(0, 0);
-        rect = new Phaser.Polygon([new Phaser.Point(0, 0), new Phaser.Point(0, this.game.height), new Phaser.Point(this.game.width, this.game.height), new Phaser.Point(this.game.width, 0)]);
+        graphics = Strategy.game.add.graphics(0, 0);
+        rect = new Phaser.Polygon([new Phaser.Point(0, 0), new Phaser.Point(0, Strategy.game.height), new Phaser.Point(Strategy.game.width, Strategy.game.height), new Phaser.Point(Strategy.game.width, 0)]);
         graphics.alpha = 0.5;
 
         graphics.beginFill("#FF33ff");
@@ -434,12 +512,18 @@ Strategy.Game.prototype = {
         graphics.endFill();
 
         this.displayWinText(team, color);
-        this.game.input.enabled = false;
+        Strategy.game.input.enabled = false;
 
     },
 
+    
+   
+
+    
+   
+
     displayWinText: function (team, color) {
-        winText = Strategy.game.add.text(this.game.width / 2, this.game.height / 2, team + "\nteam\nwins");
+        winText = Strategy.game.add.text(Strategy.game.width / 2, Strategy.game.height / 2, team + "\nteam\nwins");
         winText.anchor.set(0.5, 0.5);
         winText.font = 'Courier';
         winText.fontSize = 40;
@@ -470,8 +554,12 @@ Strategy.Game.prototype = {
             var unit = playerUnits[i];
             unit.didMove = false;
             unit.didAttack = false;
-            unit.inputEnabled = true;
+            if (playableTeam == 'player') {
+                unit.inputEnabled = true;
+            }
         }
+        this.updateText(teamText,playableTeam, '#ffffff');
+        this.updateText(turnText,turn, '#ffffff');
     },
 
     // Called when turn switches from player to enemy
@@ -487,8 +575,12 @@ Strategy.Game.prototype = {
             var unit = enemyUnits[i];
             unit.didMove = false;
             unit.didAttack = false;
-            unit.inputEnabled = true;
+            if (playableTeam == 'enemy') {
+                unit.inputEnabled = true;
+            }
         }
+        this.updateText(teamText,playableTeam, '#ffffff');
+        this.updateText(turnText,turn, '#ffffff');
     },
 
     recolor: function (unitArray, tint) {
@@ -519,6 +611,7 @@ Strategy.Game.prototype = {
         }
         return neighbors;
     },
+
     turnAction: function (player) {
         this.drawRange(player);
         if (!player.didAttack) {
@@ -585,7 +678,8 @@ Strategy.Game.prototype = {
                         // player.inputEnabled = false;
                         this.clearPath();
                         this.clearDraw();
-                        player.move(grid[tile.row][tile.col]);
+                        player.move(tile.row,tile.col);
+                        Client.moveUnitRequest(player.id, tile.row, tile.col);
                     }, this);
                 }
             } else {
@@ -658,7 +752,8 @@ Strategy.Game.prototype = {
                             this.unitDidAttack(player);
                             this.clearDraw();
                             this.clearTarget();
-                            //actionCount += 1;
+                            Client.attackUnitRequest(target.id, player.id);
+
                         } else if (grid[tile.row][tile.col].containsPlayer && turn == 'enemy') {
                             let target = this.getUnitToAttack(grid[tile.row][tile.col]);
                             // console.log(player.weakVs);
@@ -680,6 +775,7 @@ Strategy.Game.prototype = {
                             this.unitDidAttack(player);
                             this.clearDraw();
                             this.clearTarget();
+                            Client.attackUnitRequest(target.id, player.id);
                             //actionCount += 1;
                         } else {
                             //console.log("no attack");
@@ -916,23 +1012,26 @@ Strategy.Game.prototype = {
         }
 
         var len = unitArray.length;
+        if (playerUnits.length == 0) 
+            this.win('Purple');
+        if (enemyUnits.length == 0) 
+            this.win('Red');
 
         for (var i = 0; i < len; i++) {
             if (!unitArray[i].didAttack) {
                 return;
             }
         }
-        if (playerUnits.length == 0) {
-            this.win('Purple');
-        } else if (enemyUnits.length == 0) {
-            this.win('Red');
-        } else {
+        
+        
             if (turn == 'player') {
                 this.enemyTurn();
+                Client.changeTurn('enemy');
             } else {
                 this.playerTurn();
+                Client.changeTurn('player');
             }
-        }
+        
 
     },
 
@@ -952,5 +1051,117 @@ Strategy.Game.prototype = {
                 this.game.world.bringToTop(allUnits[i]);
             }
         }
-    }
-};
+    },
+    debug: function (){
+        console.log('debug');
+      },
+
+      getTurn: function (){
+        return turn;
+      },
+
+      setTurn: function (t){
+        if (t == 'player') {
+          this.playerTurn();
+        } else {
+          this.enemyTurn();
+        }
+      },
+
+      addNewPlayer:  function(id, team){
+        playableTeam = team;
+        console.log(team);
+      },
+
+      multiMoveUnit: function(data){
+        console.log('move');
+        let playerID = data.player;
+        let player = null;
+
+        if (turn == 'player') {
+            for (var i = 0; i < playerUnits.length; i++) {
+                var obj = playerUnits[i];
+                if (obj.id == playerID) {
+                  player = obj;
+                }
+            }
+        } else {
+            for (var i = 0; i < enemyUnits.length; i++) {
+                var obj = enemyUnits[i];
+                if (obj.id == playerID) {
+                    player = obj;
+                }
+            }
+        }
+
+
+        let x = data.x;
+        let y = data.y;
+        console.log(grid[x][y]);
+        player.multiMove(x,y);
+      },
+
+
+      multiAttackUnit: function(data){
+        let targetID = data.target;
+        let playerID = data.player;
+        var dmgMult = 1;
+        var color = '#ff3f3f';
+        var totDmg = 0;
+        var player = null;
+        var target = null;
+
+        if (turn == 'player') {
+            for (var i = 0; i < playerUnits.length; i++) {
+                var obj = playerUnits[i];
+                if (obj.id == playerID) {
+                  player = obj;
+                }
+            }
+        } else {
+            for (var i = 0; i < enemyUnits.length; i++) {
+                var obj = enemyUnits[i];
+                if (obj.id == playerID) {
+                    player = obj;
+                }
+            }
+        }
+
+        if (turn == 'enemy') {
+            for (var i = 0; i < playerUnits.length; i++) {
+                var obj = playerUnits[i];
+                if (obj.id == targetID) {
+                  target = obj;
+                }
+            }
+        } else {
+            for (var i = 0; i < enemyUnits.length; i++) {
+                var obj = enemyUnits[i];
+                if (obj.id == targetID) {
+                    target = obj;
+                }
+            }
+        }
+
+        if (target.type == player.weakVs) {
+            dmgMult = DMG_WEAK;
+            color = '#1ce9ed'
+        }
+        if (target.type == player.strVs) {
+            dmgMult = DMG_STRONG;
+            color = '#ffe019';
+        }
+        totDmg =Math.trunc(-player.dmg* dmgMult);
+        console.log(this);
+
+        this.updateText(dmgText,Math.abs(totDmg) , color);
+        target.updateHealth(totDmg);
+        enemyText.setText(enemyUnits.length);
+        playerText.setText(playerUnits.length);
+        if (playerUnits.length == 0) 
+            this.win('Purple');
+        if (enemyUnits.length == 0) 
+            this.win('Red');
+      },
+
+  };

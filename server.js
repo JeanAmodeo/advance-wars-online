@@ -1,7 +1,10 @@
 // https://developer.mozilla.org/en-US/docs/Learn/Server-side/Node_server_without_framework
 // https://stackoverflow.com/questions/44405448/how-to-allow-cors-with-node-js-without-using-express
 
-let http = require('http');
+var express = require('express');
+var app = express();
+
+//let http = require('http');
 let fs = require('fs');
 let path = require('path');
 
@@ -12,7 +15,78 @@ let headers = {
     /** add other headers as per requirement */
   };
 
-http.createServer(function (request, response) {
+var server = require('http').Server(app);
+var io = require('socket.io').listen(server);
+
+app.use('/js',express.static(__dirname + '/www/js'));
+app.use('/assets',express.static(__dirname + '/www/assets'));
+
+app.get('/',function(req,res){
+    res.sendFile(__dirname+'/www/index.html');
+});
+
+app.get('/',function(req,res){
+    res.sendFile(__dirname+'/index.html');
+});
+
+server.listen(3000,function(){ // Listens to port 8081
+    console.log('Listening on '+server.address().port);
+});
+
+server.lastPlayerID = 0; // Keep track of the last id assigned to a new player
+server.turn = 'player';
+
+io.on('connection',function(socket){
+  console.log("connection");
+    socket.on('newplayer',function(){
+        socket.player = {
+            id: server.lastPlayerID++,
+            team: teamSelector(),
+            turn: server.turn
+        };
+        console.log(socket.player);
+        socket.emit('allplayers',getAllPlayers());
+        socket.emit('initplayer', socket.player);
+        socket.emit('setTurn', server.turn);
+        //socket.broadcast.emit('newplayer',socket.player);
+    });
+
+    socket.on('changeTurn',function(turn){
+            server.turn = turn;
+            console.log(server.turn);
+            socket.broadcast.emit('setTurn',server.turn);
+        });
+
+    socket.on('moveUnitRequest',function(data){
+            console.log("move:", data.player, data.x, data.y);
+            socket.broadcast.emit('moveUnit',data);
+        });
+
+      socket.on('attackUnitRequest',function(data){
+              console.log("attack:",data.target, data.player);
+              socket.broadcast.emit('attackUnit',data);
+          });
+});
+
+function getAllPlayers(){
+    var players = [];
+    Object.keys(io.sockets.connected).forEach(function(socketID){
+        var player = io.sockets.connected[socketID].player;
+        if(player) players.push(player);
+    });
+    return players;
+}
+
+function teamSelector () {
+    if (server.lastPlayerID%2 == 0){// && server.lastPlayerID <= 2) {
+      return "player";
+    } else if (server.lastPlayerID%2 != 0){ //&& server.lastPlayerID <= 2){
+      return "enemy";
+    } else {
+      return "spectator";
+    }
+}
+/*http.createServer(function (request, response) {
     console.log('request ', request.url);
     let url = request.url
     if (url == "/") {
@@ -43,7 +117,7 @@ http.createServer(function (request, response) {
     };
 
     let contentType = mimeTypes[extname] || 'application/octet-stream';
-    
+
 
     fs.readFile(filePath, function(error, content) {
         if (error) {
@@ -67,4 +141,4 @@ http.createServer(function (request, response) {
     });
 
 }).listen(3000);
-console.log('Server running at http://127.0.0.1:3000/');
+console.log('Server running at http://127.0.0.1:3000/');*/
