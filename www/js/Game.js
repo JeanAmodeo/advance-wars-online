@@ -1,9 +1,12 @@
 var path = [];
 var drawn = [];
 var targetTile = [];
+
+//checks who is playing
 var playableTeam = "spectator";
 
 // keep track of all of the tiles on the map
+//0: water, 1: grass, 2: mountain, 3: castle
 var grid = [];
 var map = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -24,6 +27,13 @@ var map = [
 ];
 
 // list of units to create at the start of the game
+//frame : which sprite is used
+//moves : moving radius
+//range : attack radius
+//maxHealth : maximum health of the unit
+//dmg : damage dealt when hit
+//weakVs : half damage against this type of unit
+//strVs : double damage against this type of unit
 var types = [{
         name: 'sword',
         frame: 0,
@@ -54,8 +64,9 @@ var types = [{
         weakVs: 'bow',
         strVs: 'sword'
     },
-    
+
 ];
+//contains all the units spawning at the start
 var units = [{
         id: 1,
         type: 'sword',
@@ -100,32 +111,7 @@ var units = [{
     }
 ];
 
-// var units = [
-    
-//         {
-//                     id: 5,
-//                     type: 'sword',
-//                     row: 12,
-//                     col: 6,
-//                     team: 'enemy'
-//                 },
-//                 {
-//                     id: 6,
-//                     type: 'wizard',
-//                     row: 10,
-//                     col: 14,
-//                     team: 'player'
-//                 },
-//                 {
-//                     id: 7,
-//                     type: 'wizard',
-//                     row: 10,
-//                     col: 14,
-//                     team: 'player'
-//                 }
-//     ];
-
-// contains all units
+// contains all units separated between players
 var playerUnits = [];
 var enemyUnits = [];
 
@@ -136,12 +122,14 @@ const DMG_STRONG = 2;
 // contains the current player
 var turn = 'player';
 
+//initialize game
 Strategy.Game = function () {};
 
 Unit = function (unitData) {
 
         Phaser.Sprite.call(this, Strategy.game, Strategy.game.global.tileSize * unitData.col, Strategy.game.global.tileSize * unitData.row, unitData.type);
         this.id = unitData.id;
+        //applying texture to sprite
         switch (unitData.type) {
             case 'sword':
                 type = types[0];
@@ -157,6 +145,7 @@ Unit = function (unitData) {
                 break;
         }
 
+        //giving attributes to the new created unit
         this.type = type.name;
         this.frame = type.frame;
         this.moves = type.moves;
@@ -166,13 +155,14 @@ Unit = function (unitData) {
         this.weakVs = type.weakVs;
         this.strVs = type.strVs;
 
-
+        //unit starting position
         this.row = unitData.row;
         this.col = unitData.col;
 
         this.team = unitData.team;
         this.health = type.maxHealth;
 
+        //add unit idle animation, 5 frames/second looping
         var idle = this.animations.add('idle');
         this.animations.play('idle', 5, true);
 
@@ -187,28 +177,27 @@ Unit = function (unitData) {
             this.inputEnabled = false;
         }
 
+        //add new unit to game
         Strategy.game.add.existing(this);
     },
 
     Unit.prototype = Object.create(Phaser.Sprite.prototype);
+
 Unit.prototype.constructor = Unit;
 
 
 Unit.prototype.addHealthBar = function () {
     // Add red background to represent missing health
     var healthbarbg = this.game.add.sprite(0, -10, 'healthbar');
-    // healthbarbg.anchor.setTo(-0.5,-0.5);
     healthbarbg.cropEnabled = true;
     healthbarbg.tint = 0xFF0000;
 
     // Add green foreground to repesent current health
     var healthbarfg = this.game.add.sprite(0, -10, 'healthbar');
-    // healthbarfg.anchor.setTo(-0.5,-0.5);
     healthbarfg.cropEnabled = true;
     healthbarfg.tint = 0x00FF00;
 
     var healthNum = this.game.add.text(-3, -6, this.health);
-    // healthNum.setText(this.health);
     healthNum.anchor.setTo(0.5, 0.5);
     healthNum.fontSize = 12;
     healthNum.stroke = '#ffffff';
@@ -216,7 +205,7 @@ Unit.prototype.addHealthBar = function () {
     healthNum.font = 'Arial Black';
 
 
-    // attach healthbar to unit
+    // attach healthbar and health counter to unit
     this.addChild(healthbarbg);
     this.addChild(healthbarfg);
     this.addChild(healthNum);
@@ -233,14 +222,16 @@ Unit.prototype.updateHealth = function (healthDelta) {
     // get the child healthbar foreground sprite
     var healthbarfg = this.getChildAt(1);
 
+    //get the health counter
     var healthNum = this.getChildAt(2);
 
 
     // update the width based on fraction of health remaining
     healthbarfg.width = maxWidth * (this.health / this.maxHealth);
     healthNum.text = this.health;
-    // console.log(healthNum.text);
+
     if (this.health <= 0) {
+        //destroys unit if dead
         this.destroy();
         if (turn == 'enemy') {
             for (var i = 0; i < playerUnits.length; i++) {
@@ -285,21 +276,16 @@ Unit.prototype.followPath = function (unitPath) {
         currentCost = next.cost;
     }
 
-    // TODO: Replace this with a context menu
     // When the tween is done, change the turn 
     playerTween.onComplete.add(function () {
         Strategy.Game.prototype.unitDidMove(this);
-        // if (turn == 'player') {
-        //     Strategy.Game.prototype.enemyTurn.call(Strategy.game.state.states["Game"]);
-        // } else {
-        //     Strategy.Game.prototype.playerTurn.call(Strategy.game.state.states["Game"]);
-        // }
     }, this);
 
     playerTween.start();
 
 }
 
+//Moves the unit to an x,y destination on the grid
 Unit.prototype.move = function (x, y) {
     var to = grid[x][y];
     var unitPath = [];
@@ -314,7 +300,7 @@ Unit.prototype.move = function (x, y) {
 
     this.followPath(unitPath);
 
-    // update grid properties to reflect the movement of the character
+    // update grid once unit moved
     if (this.team == 'player') {
         grid[this.row][this.col].containsPlayer = false;
         grid[newRow][newCol].containsPlayer = true;
@@ -328,6 +314,7 @@ Unit.prototype.move = function (x, y) {
     this.col = newCol;
 }
 
+//move adapted to socket.io 
 Unit.prototype.multiMove = function (x, y) {
     var to = grid[x][y];
     var from = grid[this.row][this.col];
@@ -343,7 +330,6 @@ Unit.prototype.multiMove = function (x, y) {
     }, duration);
     tween.start();
 
-    // update grid properties to reflect the movement of the character
     if (this.team == 'player') {
         grid[this.row][this.col].containsPlayer = false;
         grid[newRow][newCol].containsPlayer = true;
@@ -352,16 +338,15 @@ Unit.prototype.multiMove = function (x, y) {
         grid[newRow][newCol].containsEnemy = true;
     }
 
-    // update instance variables to reflect move
+    // Unit gets new position
     this.row = newRow;
     this.col = newCol;
 }
 
-/* Creates a Tile (extends Sprite) given the following parameters:
- * row: integer starting row on the map (0-indexed)
- * col: integer starting col on the map (0-indexed)
- * type: integer representing tile type (currently 0 represents an obstacle,
- * all other positive integers correspond to move cost) */
+/* Creates a tile entity with:
+ * row: starting row on grid
+ * col: starting column on grid
+ * type: type of tile  0: water, 1: grass, 2: mountain, 3: castle*/
 Tile = function (row, col, type) {
     if (type != 0) {
         // create sprite
@@ -376,6 +361,7 @@ Tile = function (row, col, type) {
     } else {
         // create sprite
         Phaser.Sprite.call(this, Strategy.game, Strategy.game.global.tileSize * col, Strategy.game.global.tileSize * row, 'water');
+        //water tiles need specific treatment because of the animation
 
         // set instance variables
         this.frame = type
@@ -387,8 +373,6 @@ Tile = function (row, col, type) {
         this.animations.play('flow', 5, true);
     }
 
-    // it is important to set the initial search depth to inifinty
-    // so that the movement range search works properly
     this.depth = Infinity;
 
     // add sprite to game
@@ -403,12 +387,12 @@ Strategy.Game.prototype = {
     create: function () {
         // set dimensions of the game
         this.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
-        //this.scale.pageAlignHorizontally = true;*
+        //Scale game 2 times and align
         this.scale.setUserScale(2, 2, 0, 0);
         this.scale.pageAlignVertically = true;
         this.game.stage.smoothed = false;
 
-
+        //split the game in tileSize sized tiles
         var cols = this.game.width / this.game.global.tileSize;
         var rows = this.game.height / this.game.global.tileSize;
 
@@ -434,18 +418,15 @@ Strategy.Game.prototype = {
                 enemyUnits.push(unit);
             }
         }
-
-          
-        // start the game with the player turn
-        // this.playerTurn();
+        //Queries a new player
         Client.askNewPlayer();
-        // this.win("Purple");
+        //creates UI text
         this.createText();
-           
+
     },
 
     createText: function () {
-
+        //Bottom left, tells how much damage was inflicted with the last attack
         dmgText = Strategy.game.add.text(3, this.game.height - 3, '');
         dmgText.anchor.set(0, 1);
         dmgText.font = 'Arial Black';
@@ -456,7 +437,7 @@ Strategy.Game.prototype = {
         dmgText.fill = '#f44242';
         this.game.world.bringToTop(dmgText);
 
-
+        //Remaining units of player 1 (top-left)
         playerText = Strategy.game.add.text(3, 0, playerUnits.length);
         playerText.anchor.set(0, 0);
         playerText.font = 'Arial Black';
@@ -466,7 +447,7 @@ Strategy.Game.prototype = {
         playerText.strokeThickness = 6;
         playerText.fill = '#ffffff';
 
-
+        //Remaining units of player 2 (top-right)
         enemyText = Strategy.game.add.text(this.game.width - 3, 0, enemyUnits.length);
         enemyText.anchor.set(1, 0);
         enemyText.font = 'Arial Black';
@@ -476,7 +457,8 @@ Strategy.Game.prototype = {
         enemyText.strokeThickness = 6;
         enemyText.fill = '#ffffff';
 
-        teamText =  Strategy.game.add.text(this.game.width/2, -2, playableTeam);
+        //Team color, Red = Player 1, Purple = Player 2
+        teamText = Strategy.game.add.text(this.game.width / 2, -2, playableTeam);
         teamText.anchor.set(0.5, 0);
         teamText.font = 'Arial Black';
         teamText.fontSize = 12;
@@ -484,25 +466,22 @@ Strategy.Game.prototype = {
         teamText.strokeThickness = 6;
         teamText.fill = '#ffffff';
 
-        turnText =  Strategy.game.add.text(this.game.width-2, this.game.height-2, turn);
+        //Player turn or enemy turn depending on the turn and playable variables
+        turnText = Strategy.game.add.text(this.game.width - 2, this.game.height - 2, turn);
         turnText.anchor.set(1, 1);
         turnText.font = 'Arial Black';
         turnText.fontSize = 12;
         turnText.stroke = '#fffff';
         turnText.strokeThickness = 6;
         turnText.fill = '#ffffff';
-
-
-
-
     },
 
-    win: function(team) {
-
+    //When unit counter reaches 0, displays the winning team and disables input
+    win: function (team) {
         var color = '#f44242';
         if (team != "Red") color = '#ee70ff';
 
-
+        //Draws rectangle dimming background
         graphics = Strategy.game.add.graphics(0, 0);
         rect = new Phaser.Polygon([new Phaser.Point(0, 0), new Phaser.Point(0, Strategy.game.height), new Phaser.Point(Strategy.game.width, Strategy.game.height), new Phaser.Point(Strategy.game.width, 0)]);
         graphics.alpha = 0.5;
@@ -513,15 +492,9 @@ Strategy.Game.prototype = {
 
         this.displayWinText(team, color);
         Strategy.game.input.enabled = false;
-
     },
 
-    
-   
-
-    
-   
-
+    //Displays the winning team
     displayWinText: function (team, color) {
         winText = Strategy.game.add.text(Strategy.game.width / 2, Strategy.game.height / 2, team + "\nteam\nwins");
         winText.anchor.set(0.5, 0.5);
@@ -532,10 +505,9 @@ Strategy.Game.prototype = {
         winText.strokeThickness = 6;
         winText.fill = '#ffffff';
         winText.align = "center";
-
     },
 
-
+    //Updates a text and its fill color
     updateText: function (text, content, color) {
         text.setText(content);
         text.fill = color;
@@ -558,15 +530,13 @@ Strategy.Game.prototype = {
                 unit.inputEnabled = true;
             }
         }
-        this.updateText(teamText,'\u25B0', (playableTeam == 'player' ? '#ff4242':'#ee70ff'));
-        if(turn == playableTeam)
-        {
-            this.updateText(turnText,"Your turn", '#1ce9ed');
+        //Update team color depending on the player side
+        this.updateText(teamText, '\u25B0', (playableTeam == 'player' ? '#ff4242' : '#ee70ff'));
+        if (turn == playableTeam) {
+            this.updateText(turnText, "Your turn", '#1ce9ed');
+        } else {
+            this.updateText(turnText, "Enemy turn", '#ff3f3f');
         }
-        else{
-            this.updateText(turnText,"Enemy turn", '#ff3f3f');
-        }
-        
     },
 
     // Called when turn switches from player to enemy
@@ -586,16 +556,16 @@ Strategy.Game.prototype = {
                 unit.inputEnabled = true;
             }
         }
-        this.updateText(teamText,'\u25B0', (playableTeam == 'enemy' ? '#ee70ff':'#ff4242'));
-        if(turn == playableTeam)
-        {
-            this.updateText(turnText,"Your turn", '#1ce9ed');
-        }
-        else{
-            this.updateText(turnText,"Enemy turn", '#ff3f3f');
+        //Update team color depending on the player side
+        this.updateText(teamText, '\u25B0', (playableTeam == 'enemy' ? '#ee70ff' : '#ff4242'));
+        if (turn == playableTeam) {
+            this.updateText(turnText, "Your turn", '#1ce9ed');
+        } else {
+            this.updateText(turnText, "Enemy turn", '#ff3f3f');
         }
     },
 
+    //recolors a unit, greying it out our retablishing initial brightness
     recolor: function (unitArray, tint) {
         var len = unitArray.length;
 
@@ -604,7 +574,7 @@ Strategy.Game.prototype = {
         }
     },
 
-
+    //Gets neighbouring tiles from a given one 
     neighbors: function (tile) {
         var dirs = [
             [-1, 0],
@@ -625,6 +595,7 @@ Strategy.Game.prototype = {
         return neighbors;
     },
 
+    //Determines which range should be drawn, depending on the previous player action
     turnAction: function (player) {
         this.drawRange(player);
         if (!player.didAttack) {
@@ -646,16 +617,16 @@ Strategy.Game.prototype = {
         tile.alpha = 0.5;
 
         targetTile.push(tile);
-        //console.log(targetTile);
     },
 
     clearTarget: function () {
-        //console.log(targetTile);
         for (var i = 0; i < targetTile.length; i++) {
             targetTile[i].destroy();
             targetTile = [];
         }
     },
+
+    //Draws the movement range for a given unit
     drawRange: function (player) {
         this.clearDraw();
         this.clearPath();
@@ -677,9 +648,8 @@ Strategy.Game.prototype = {
                 tile.col = range[i].col;
                 drawn.push(tile);
 
-
-                // TODO: this part of the code should be in a more logical place
                 if (!range[i].containsPlayer && !range[i].containsEnemy) {
+                    //Disables clicking if tile is occupied by enemy
                     tile.inputEnabled = true;
 
                     tile.events.onInputOver.add(function (tile, pointer) {
@@ -688,14 +658,15 @@ Strategy.Game.prototype = {
                     }, this);
 
                     tile.events.onInputDown.add(function (tile, pointer) {
-                        // player.inputEnabled = false;
                         this.clearPath();
                         this.clearDraw();
-                        player.move(tile.row,tile.col);
+                        player.move(tile.row, tile.col);
+                        //Makes a request to have the unit move through socket.io
                         Client.moveUnitRequest(player.id, tile.row, tile.col);
                     }, this);
                 }
             } else {
+                //Colors the tiles
                 var tile = this.game.add.sprite(range[i].col * this.game.global.tileSize,
                     range[i].row * this.game.global.tileSize,
                     'tiles');
@@ -707,16 +678,19 @@ Strategy.Game.prototype = {
                 drawn.push(tile);
             }
         }
-
+        //Units get above the drawn range
         this.moveUnitsToTop();
     },
 
+    //Draws the attack range for a given unit
     drawRangeAttack: function (player) {
         this.clearDraw();
         this.clearPath();
         var playerTile = grid[player.row][player.col];
+        //Damage is initially set to 1
         var dmgMult = 1;
         var totDmg = 0;
+        //This is the base color of the damage text
         var color = '#ff3f3f';
 
         range = this.getRangeAttack(player);
@@ -724,6 +698,7 @@ Strategy.Game.prototype = {
         var len = range.length;
         for (var i = 0; i < len; i++) {
             if (range[i].depth <= player.range) {
+                //Draws the actual attack range
                 var tile = this.game.add.sprite(range[i].col * this.game.global.tileSize,
                     range[i].row * this.game.global.tileSize,
                     'tiles');
@@ -734,9 +709,9 @@ Strategy.Game.prototype = {
                 tile.col = range[i].col;
                 drawn.push(tile);
 
-
-                // TODO: this part of the code should be in a more logical place
                 if (!range[i].containsPlayer && turn == 'player' || !range[i].containsEnemy && turn == 'enemy') {
+                    //Player can click only if tile doesnt contain a friendly unit
+                    //Clicking on an empty tile results in skipping the turn
                     tile.inputEnabled = true;
 
                     tile.events.onInputOver.add(function (tile, pointer) {
@@ -746,8 +721,10 @@ Strategy.Game.prototype = {
 
                     tile.events.onInputDown.add(function (tile, pointer) {
                         player.inputEnabled = false;
+                        //Same process for an enemy(player 2) unit
                         if (grid[tile.row][tile.col].containsEnemy && turn == 'player') {
                             let target = this.getUnitToAttack(grid[tile.row][tile.col]);
+                            //Checks unit relation to the target : weak against, string against, or neutral
                             if (target.type == player.weakVs) {
                                 dmgMult = DMG_WEAK;
                                 color = '#1ce9ed'
@@ -756,21 +733,21 @@ Strategy.Game.prototype = {
                                 dmgMult = DMG_STRONG;
                                 color = '#ffe019';
                             }
-
+                            //Total damage is reduced to closest integer
                             totDmg = Math.trunc(-player.dmg * dmgMult);
-                            // console.log("player vs enemy");
                             target.updateHealth(totDmg);
+                            //Displays damage text
                             this.updateText(dmgText, Math.abs(totDmg), color);
 
                             this.unitDidAttack(player);
                             this.clearDraw();
                             this.clearTarget();
+                            //Allows socket.io to take the attack in account
                             Client.attackUnitRequest(target.id, player.id);
 
                         } else if (grid[tile.row][tile.col].containsPlayer && turn == 'enemy') {
                             let target = this.getUnitToAttack(grid[tile.row][tile.col]);
-                            // console.log(player.weakVs);
-                            // console.log(target.type);
+
                             if (target.type == player.weakVs) {
                                 dmgMult = DMG_WEAK;
                                 color = '#1ce9ed'
@@ -779,9 +756,7 @@ Strategy.Game.prototype = {
                                 dmgMult = DMG_STRONG;
                                 color = '#ffe019';
                             }
-                            // console.log("enemy vs player");
                             totDmg = Math.trunc(-player.dmg * dmgMult);
-                            // console.log("player vs enemy");
                             target.updateHealth(totDmg);
                             this.updateText(dmgText, Math.abs(totDmg), color);
 
@@ -789,9 +764,7 @@ Strategy.Game.prototype = {
                             this.clearDraw();
                             this.clearTarget();
                             Client.attackUnitRequest(target.id, player.id);
-                            //actionCount += 1;
                         } else {
-                            //console.log("no attack");
                             player.updateHealth(0);
                             this.unitDidAttack(player);
                             this.clearDraw();
@@ -814,6 +787,7 @@ Strategy.Game.prototype = {
         this.moveUnitsToTop();
     },
 
+    //Draws the path the unit will take when moving to target
     drawPath: function (to, from) {
         this.clearPath();
         path = [];
@@ -829,7 +803,7 @@ Strategy.Game.prototype = {
 
             to = to.cameFrom;
         }
-        // TODO: Find a way to combine this step into the loop?
+
         var tile = this.game.add.sprite(from.col * this.game.global.tileSize,
             from.row * this.game.global.tileSize,
             'tiles');
@@ -839,9 +813,9 @@ Strategy.Game.prototype = {
         path.push(tile);
     },
 
+    //Deletes the path
     clearPath: function () {
         var len = path.length;
-
         for (var i = 0; i < len; i++) {
             path[i].destroy();
         }
@@ -849,6 +823,7 @@ Strategy.Game.prototype = {
         path = [];
     },
 
+    //Gets targetted unit information with row and col 
     getUnitToAttack: function (tile) {
         if (turn == 'player') {
             for (var i = 0; i < enemyUnits.length; i++) {
@@ -972,13 +947,11 @@ Strategy.Game.prototype = {
         var len = drawn.length;
         for (var i = 0; i < len; i++) {
             drawn[i].destroy();
-            // TODO: Move this logic
         }
 
         drawn = [];
     },
 
-    // TODO: Check where this actually needs to be called
     resetGrid: function () {
         for (var i = 0; i < grid.length; i++) {
             for (var j = 0; j < grid[0].length; j++) {
@@ -987,6 +960,7 @@ Strategy.Game.prototype = {
         }
     },
 
+    //Tells that unit has moved during the turn
     unitDidMove: function (unit) {
         var unitArray;
 
@@ -1010,6 +984,7 @@ Strategy.Game.prototype = {
         }
     },
 
+    //Tells that unit has attacked during the turn
     unitDidAttack: function (unit) {
         var unitArray;
         enemyText.setText(enemyUnits.length);
@@ -1025,9 +1000,10 @@ Strategy.Game.prototype = {
         }
 
         var len = unitArray.length;
-        if (playerUnits.length == 0) 
+        //Checks if one of the players has won after this attack
+        if (playerUnits.length == 0)
             this.win('Purple');
-        if (enemyUnits.length == 0) 
+        if (enemyUnits.length == 0)
             this.win('Red');
 
         for (var i = 0; i < len; i++) {
@@ -1035,19 +1011,16 @@ Strategy.Game.prototype = {
                 return;
             }
         }
-        
-        
-            if (turn == 'player') {
-                this.enemyTurn();
-                Client.changeTurn('enemy');
-            } else {
-                this.playerTurn();
-                Client.changeTurn('player');
-            }
-        
-
+        if (turn == 'player') {
+            this.enemyTurn();
+            Client.changeTurn('enemy');
+        } else {
+            this.playerTurn();
+            Client.changeTurn('player');
+        }
     },
 
+    //Moves units above the drawn ranges
     moveUnitsToTop: function () {
         if (turn == 'player') {
             var allUnits = playerUnits.concat(enemyUnits);
@@ -1065,29 +1038,30 @@ Strategy.Game.prototype = {
             }
         }
     },
-    debug: function (){
+
+    debug: function () {
         console.log('debug');
-      },
+    },
 
-      getTurn: function (){
+    getTurn: function () {
         return turn;
-      },
+    },
 
-      setTurn: function (t){
+    setTurn: function (t) {
         if (t == 'player') {
-          this.playerTurn();
+            this.playerTurn();
         } else {
-          this.enemyTurn();
+            this.enemyTurn();
         }
-      },
+    },
 
-      addNewPlayer:  function(id, team){
+    addNewPlayer: function (id, team) {
         playableTeam = team;
-        console.log(team);
-      },
+    },
 
-      multiMoveUnit: function(data){
-        console.log('move');
+    //Move Unit adapted to socket.io with the necessary info
+    multiMoveUnit: function (data) {
+
         let playerID = data.player;
         let player = null;
 
@@ -1095,7 +1069,7 @@ Strategy.Game.prototype = {
             for (var i = 0; i < playerUnits.length; i++) {
                 var obj = playerUnits[i];
                 if (obj.id == playerID) {
-                  player = obj;
+                    player = obj;
                 }
             }
         } else {
@@ -1107,15 +1081,15 @@ Strategy.Game.prototype = {
             }
         }
 
-
         let x = data.x;
         let y = data.y;
-        console.log(grid[x][y]);
-        player.multiMove(x,y);
-      },
+
+        player.multiMove(x, y);
+    },
 
 
-      multiAttackUnit: function(data){
+    //Attack unit adapted to socet.io with the neccesary info
+    multiAttackUnit: function (data) {
         let targetID = data.target;
         let playerID = data.player;
         var dmgMult = 1;
@@ -1128,7 +1102,7 @@ Strategy.Game.prototype = {
             for (var i = 0; i < playerUnits.length; i++) {
                 var obj = playerUnits[i];
                 if (obj.id == playerID) {
-                  player = obj;
+                    player = obj;
                 }
             }
         } else {
@@ -1144,7 +1118,7 @@ Strategy.Game.prototype = {
             for (var i = 0; i < playerUnits.length; i++) {
                 var obj = playerUnits[i];
                 if (obj.id == targetID) {
-                  target = obj;
+                    target = obj;
                 }
             }
         } else {
@@ -1164,17 +1138,16 @@ Strategy.Game.prototype = {
             dmgMult = DMG_STRONG;
             color = '#ffe019';
         }
-        totDmg =Math.trunc(-player.dmg* dmgMult);
-        console.log(this);
 
-        this.updateText(dmgText,Math.abs(totDmg) , color);
+        totDmg = Math.trunc(-player.dmg * dmgMult);
+        this.updateText(dmgText, Math.abs(totDmg), color);
         target.updateHealth(totDmg);
         enemyText.setText(enemyUnits.length);
         playerText.setText(playerUnits.length);
-        if (playerUnits.length == 0) 
+        if (playerUnits.length == 0)
             this.win('Purple');
-        if (enemyUnits.length == 0) 
+        if (enemyUnits.length == 0)
             this.win('Red');
-      },
+    },
 
-  };
+};

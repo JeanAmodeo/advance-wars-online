@@ -12,7 +12,6 @@ let headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'OPTIONS, POST, GET',
     'Access-Control-Max-Age': 2592000 // 30 days
-    /** add other headers as per requirement */
   };
 
 var server = require('http').Server(app);
@@ -29,7 +28,7 @@ app.get('/',function(req,res){
     res.sendFile(__dirname+'/index.html');
 });
 
-server.listen(3000,function(){ // Listens to port 8081
+server.listen(3000,function(){ // Listens to port 3000
     console.log('Listening on '+server.address().port);
 });
 
@@ -37,14 +36,14 @@ server.lastPlayerID = 0; // Keep track of the last id assigned to a new player
 server.turn = 'player';
 
 io.on('connection',function(socket){
-  console.log("connection");
+//   console.log("connection");
     socket.on('newplayer',function(){
         socket.player = {
             id: server.lastPlayerID++,
             team: teamSelector(),
             turn: server.turn
         };
-        console.log(socket.player);
+        // console.log(socket.player);
         socket.emit('allplayers',getAllPlayers());
         socket.emit('initplayer', socket.player);
         socket.emit('setTurn', server.turn);
@@ -53,17 +52,17 @@ io.on('connection',function(socket){
 
     socket.on('changeTurn',function(turn){
             server.turn = turn;
-            console.log(server.turn);
+            // console.log(server.turn);
             socket.broadcast.emit('setTurn',server.turn);
         });
 
     socket.on('moveUnitRequest',function(data){
-            console.log("move:", data.player, data.x, data.y);
+            // console.log("move:", data.player, data.x, data.y);
             socket.broadcast.emit('moveUnit',data);
         });
 
       socket.on('attackUnitRequest',function(data){
-              console.log("attack:",data.target, data.player);
+            //   console.log("attack:",data.target, data.player);
               socket.broadcast.emit('attackUnit',data);
           });
 });

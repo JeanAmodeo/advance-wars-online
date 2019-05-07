@@ -6,12 +6,12 @@ Client.askNewPlayer = function(){
 };
 
 Client.socket.on('newplayer',function(data){
-  console.log(data);
+  // console.log(data);
 });
 
 Client.socket.on('initplayer',function(data){
-  console.log(data);
-  console.log(Strategy.Game);
+  // console.log(data);
+  // console.log(Strategy.Game);
     //Strategy.game.addNewPlayer(data.id,data.team);
   Strategy.Game.prototype.addNewPlayer(data.id, data.team);
   Strategy.Game.prototype.setTurn(data.turn);
@@ -26,7 +26,7 @@ Client.socket.on('setTurn',function(turn){
 });
 
 Client.changeTurn = function(t){
-  console.log(t);
+  // console.log(t);
     Client.socket.emit('changeTurn', t);
 };
 
@@ -36,7 +36,7 @@ Client.gridRequest = function(grid){
 
 //Server Side movement and attack
 Client.moveUnitRequest = function(player, x, y){
-    console.log({player:player, x:x, y:y});
+    // console.log({player:player, x:x, y:y});
     Client.socket.emit('moveUnitRequest', {player:player, x:x, y:y});
 };
 
@@ -50,6 +50,6 @@ Client.socket.on('moveUnit',function(data){
 });
 
 Client.socket.on('attackUnit',function(data){
-  console.log(data);
+  // console.log(data);
     Strategy.Game.prototype.multiAttackUnit(data);
 });
